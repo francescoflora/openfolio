@@ -1,0 +1,153 @@
+import { useProject } from '@/store/useProject'
+import { saveExport } from '@/core/fileio'
+import { compileMarkdown, compileText, compileUnits } from '@/core/compile'
+import { hasCustomTitle, slug } from '@/core/stats'
+import type { BinderNode, Project } from '@/core/types'
+import type { JSONContent, SceneDoc } from '@/core/json'
+import { nativeExportFdx, nativeExportFountain, nativeExportPdf } from '@/core/native'
+
+export type ExportFormat = 'fountain' | 'fdx' | 'txt' | 'md' | 'docx' | 'epub' | 'pdf' | 'print'
+
+export const EXPORT_LABEL: Record<ExportFormat, string> = {
+  fountain: 'Fountain (.fountain)',
+  fdx: 'Final Draft (.fdx)',
+  txt: 'Testo semplice (.txt)',
+  md: 'Markdown (.md)',
+  docx: 'Word (.docx)',
+  epub: 'EPUB',
+  pdf: 'PDF (.pdf)',
+  print: 'Stampa',
+}
+
+export const ALL_FORMATS: ExportFormat[] = ['fdx', 'fountain', 'pdf', 'print', 'docx', 'txt', 'md', 'epub']
+
+export const FORMATS_BY_MODE = {
+  screenplay: ALL_FORMATS,
+  novel: ALL_FORMATS,
+} as Record<string, ExportFormat[]>
+
+function orderedDocs(): SceneDoc[] {
+  const { project, scenes } = useProject.getState()
+  if (!project) return []
+  const docs: SceneDoc[] = []
+  const walk = (nodes: BinderNode[]) => {
+    for (const n of nodes) {
+      if (n.kind === 'scene' && scenes[n.id]) docs.push(scenes[n.id]!)
+      else if (n.children) walk(n.children)
+    }
+  }
+  walk(project.binder)
+  return docs
+}
+
+function compileExportDocs(project: Project, scenes: Record<string, SceneDoc>): SceneDoc[] {
+  const units = compileUnits(project, scenes)
+  const docs: SceneDoc[] = []
+  let pendingHeadings: JSONContent[] = []
+  const isNovel = project.mode === 'novel'
+
+  for (const u of units) {
+    if (u.kind === 'heading') {
+      const elType = isNovel ? 'heading' : 'section_heading'
+      pendingHeadings.push({
+        type: elType,
+        attrs: isNovel ? { level: Math.min(u.level + 1, 3) } : undefined,
+        content: [{ type: 'text', text: u.text }],
+      })
+    } else {
+      if (pendingHeadings.length > 0) {
+        docs.push({
+          ...u.doc,
+          content: [...pendingHeadings, ...u.doc.content],
+        })
+        pendingHeadings = []
+      } else {
+        docs.push(u.doc)
+      }
+    }
+  }
+
+  if (pendingHeadings.length > 0) {
+    docs.push({
+      type: 'doc',
+      content: pendingHeadings,
+    })
+  }
+
+  return docs
+}
+
+export async function runExport(format: ExportFormat): Promise<void> {
+  const { project, scenes } = useProject.getState()
+  if (!project) return
+  const base = slug(project.title)
+
+  switch (format) {
+    case 'fountain': {
+      const text = await nativeExportFountain(orderedDocs())
+      await saveExport(`${base}.fountain`, text, 'text/plain', [{ name: 'Fountain', extensions: ['fountain'] }])
+      break
+    }
+    case 'fdx': {
+      const xml = await nativeExportFdx(orderedDocs())
+      await saveExport(`${base}.fdx`, xml, 'application/xml', [
+        { name: 'Final Draft', extensions: ['fdx'] },
+      ])
+      break
+    }
+    case 'txt':
+      await saveExport(`${base}.txt`, compileText(project, scenes), 'text/plain', [{ name: 'Testo', extensions: ['txt'] }])
+      break
+    case 'md':
+      await saveExport(`${base}.md`, compileMarkdown(project, scenes), 'text/markdown', [{ name: 'Markdown', extensions: ['md'] }])
+      break
+    case 'docx': {
+      const { exportDocx } = await import('./exporters')
+      await exportDocx(project, scenes)
+      break
+    }
+    case 'epub': {
+      const { exportEpub } = await import('./exporters')
+      await exportEpub(project, scenes)
+      break
+    }
+    case 'pdf': {
+      const fontFamily =
+        project.settings.elementFonts?.paragraph ||
+        project.settings.fontFamily ||
+        (project.mode === 'screenplay' ? 'Courier Prime' : 'EB Garamond')
+
+      const hasTitlePage = Boolean(
+        project.settings.titlePage?.title ||
+        project.settings.titlePage?.author ||
+        (hasCustomTitle(project.title) && project.settings.author),
+      )
+
+      const pdfBytes = await nativeExportPdf({
+        title: project.settings.titlePage?.title ?? project.title,
+        mode: project.mode,
+        author: project.settings.author || project.settings.titlePage?.author,
+        contact: project.settings.titlePage?.contact,
+        font_family: fontFamily,
+        font_size_pt: project.settings.fontSizePt,
+        justify: project.settings.justify,
+        indent: project.settings.indent,
+        has_title_page: hasTitlePage,
+        page_size: 'letter',
+        scenes: compileExportDocs(project, scenes),
+      })
+      if (pdfBytes) {
+        await saveExport(`${base}.pdf`, pdfBytes, 'application/pdf', [{ name: 'Documento PDF', extensions: ['pdf'] }])
+      } else {
+        const { printProject } = await import('./print')
+        await printProject(project, scenes)
+      }
+      break
+    }
+    case 'print': {
+      const { printProject } = await import('./print')
+      await printProject(project, scenes)
+      break
+    }
+  }
+}

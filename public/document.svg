@@ -1,0 +1,124 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Paper Sheet Gradient -->
+    <linearGradient id="doc_paper" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="60%" stop-color="#f8fafc" />
+      <stop offset="90%" stop-color="#e2e8f0" />
+      <stop offset="100%" stop-color="#cbd5e1" />
+    </linearGradient>
+
+    <!-- Folded Dog-Ear Corner -->
+    <linearGradient id="doc_fold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a" />
+      <stop offset="35%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#d97706" />
+    </linearGradient>
+
+    <!-- Radiant Amber Gradient for Nib -->
+    <linearGradient id="doc_nib_amber" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a" />
+      <stop offset="22%" stop-color="#f59e0b" />
+      <stop offset="70%" stop-color="#d97706" />
+      <stop offset="100%" stop-color="#b45309" />
+    </linearGradient>
+
+    <!-- Platinum Gradient for Nib Left Wing -->
+    <linearGradient id="doc_nib_plat" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="45%" stop-color="#e2e8f0" />
+      <stop offset="85%" stop-color="#94a3b8" />
+      <stop offset="100%" stop-color="#64748b" />
+    </linearGradient>
+
+    <!-- Bottom Badge Gradient -->
+    <linearGradient id="doc_badge_bg" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#1e293b" />
+    </linearGradient>
+
+    <!-- Soft Drop Shadow for Document in Windows Explorer -->
+    <filter id="doc_shadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="12" stdDeviation="14" flood-color="#090d16" flood-opacity="0.25" />
+    </filter>
+
+    <!-- Fold Shadow -->
+    <filter id="doc_fold_shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="-4" dy="6" stdDeviation="6" flood-color="#0f172a" flood-opacity="0.3" />
+    </filter>
+  </defs>
+
+  <!-- ENLARGED WINDOWS DOCUMENT ICON FOR .OPENFOLIO FILES -->
+  <g filter="url(#doc_shadow)">
+    <!-- Base Document Sheet with Clipped Top-Right Corner -->
+    <!-- Document bounds: width 384 (from 64 to 448), height 454 (from 28 to 482) -->
+    <path d="M 94 28 
+             L 326 28 
+             L 448 150 
+             L 448 456 
+             C 448 470 436 482 422 482 
+             L 94 482 
+             C 78 482 66 470 66 456 
+             L 66 56 
+             C 66 41 78 28 94 28 Z"
+          fill="url(#doc_paper)"
+          stroke="#cbd5e1"
+          stroke-width="3.5" />
+
+    <!-- Folded Dog-Ear Flap -->
+    <g filter="url(#doc_fold_shadow)">
+      <path d="M 326 28 
+               L 326 134 
+               C 326 143 335 150 344 150 
+               L 448 150 Z"
+            fill="url(#doc_fold)"
+            stroke="#b45309"
+            stroke-width="2" />
+    </g>
+
+    <!-- Manuscript Header Lines -->
+    <line x1="110" y1="86" x2="270" y2="86" stroke="#94a3b8" stroke-width="6" stroke-linecap="round" opacity="0.45" />
+    <line x1="110" y1="116" x2="220" y2="116" stroke="#94a3b8" stroke-width="6" stroke-linecap="round" opacity="0.3" />
+
+    <!-- PROMINENT FOLIO NIB EMBLEM (Center cx=256, cy=265) -->
+    <g transform="translate(256, 265) scale(0.48) translate(-256, -256)">
+      <!-- Left Wing -->
+      <path d="M 252 20 
+               C 200 95, 110 180, 44 250 
+               C 22 274, 24 316, 52 350 
+               L 178 468 
+               C 202 488, 230 494, 252 494 Z"
+            fill="url(#doc_nib_plat)" />
+
+      <!-- Right Wing -->
+      <path d="M 260 20 
+               C 312 95, 402 180, 468 250 
+               C 490 274, 488 316, 460 350 
+               L 334 468 
+               C 310 488, 282 494, 260 494 Z"
+            fill="url(#doc_nib_amber)" />
+
+      <!-- Spine Slits and Breather -->
+      <line x1="256" y1="20" x2="256" y2="252" stroke="#0f172a" stroke-width="10" stroke-linecap="round" />
+      <circle cx="256" cy="265" r="26" fill="#0f172a" />
+      <circle cx="256" cy="265" r="13" fill="#fef08a" />
+      <line x1="256" y1="288" x2="256" y2="492" stroke="#0f172a" stroke-width="10" stroke-linecap="round" />
+
+      <!-- Facets -->
+      <path d="M 252 90 L 98 256 C 130 310, 180 370, 252 420 Z" fill="#ffffff" opacity="0.35" />
+      <path d="M 260 90 L 414 256 C 382 310, 332 370, 260 420 Z" fill="#fef08a" opacity="0.45" />
+    </g>
+
+    <!-- BOLD FILE TYPE BADGE -->
+    <g transform="translate(116, 406)">
+      <rect x="0" y="0" width="280" height="48" rx="12" fill="url(#doc_badge_bg)" stroke="#f59e0b" stroke-width="2.5" />
+      <circle cx="28" cy="24" r="6" fill="#f59e0b" />
+      <text x="48" y="31" 
+            fill="#f8fafc" 
+            font-family="'Inter', -apple-system, system-ui, sans-serif" 
+            font-size="21" 
+            font-weight="800" 
+            letter-spacing="2.5">OPENFOLIO</text>
+    </g>
+  </g>
+</svg>

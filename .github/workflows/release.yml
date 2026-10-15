@@ -1,0 +1,73 @@
+name: Release
+
+# Runs only after the CI workflow completes successfully on master.
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [master]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-master
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: >-
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'master'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build and create release
+        id: tauri
+        uses: tauri-apps/tauri-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: v__VERSION__
+          releaseName: 'OpenFolio v__VERSION__'
+          releaseBody: 'Asset della release: installer NSIS e eseguibile standalone.'
+          releaseDraft: false
+          prerelease: false
+          generateReleaseNotes: true
+          args: '--bundles nsis'
+
+      - name: Upload standalone executable
+        if: steps.tauri.outputs.appVersion != ''
+        continue-on-error: true
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $exe = Get-ChildItem -Path "src-tauri/target/release" -Filter *.exe -File |
+                 Where-Object { $_.DirectoryName -notmatch '\\bundle\\' } |
+                 Select-Object -First 1
+          if (-not $exe) { Write-Error "Eseguibile non trovato"; exit 1 }
+          gh release upload "v${{ steps.tauri.outputs.appVersion }}" $exe.FullName --clobber
