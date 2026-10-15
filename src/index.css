@@ -1,0 +1,264 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-brand: 'Outfit', 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-script: 'Courier Prime', 'Courier New', monospace;
+
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-faint: var(--ink-faint);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+}
+
+:root {
+  color-scheme: light;
+  --canvas: #f6f7f9;
+  --surface: #ffffff;
+  --surface-2: #f0f1f4;
+  --border: #e2e4ea;
+  --ink: #14161a;
+  --ink-soft: #52565f;
+  --ink-faint: #8b8f99;
+  --accent: #d97706;
+  --accent-ink: #ffffff;
+}
+
+.dark {
+  color-scheme: dark;
+  --canvas: #0f1115;
+  --surface: #171a20;
+  --surface-2: #1e222a;
+  --border: #2a2f39;
+  --ink: #ecedf0;
+  --ink-soft: #a2a7b2;
+  --ink-faint: #6b7280;
+  --accent: #f59e0b;
+  --accent-ink: #1a1205;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background: var(--canvas);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Mostra sempre la manina (cursor: pointer) su ogni elemento cliccabile dell'app */
+button,
+[role="button"],
+a,
+select,
+summary,
+input[type="checkbox"],
+input[type="radio"],
+input[type="submit"],
+input[type="button"],
+input[type="reset"],
+input[type="file"],
+label[for],
+label:has(input[type="checkbox"]),
+label:has(input[type="radio"]),
+.cursor-pointer,
+[onclick] {
+  cursor: pointer !important;
+}
+
+button:disabled,
+[role="button"][aria-disabled="true"],
+input:disabled,
+select:disabled {
+  cursor: not-allowed;
+}
+
+/* ProseMirror base */
+.ProseMirror {
+  outline: none;
+  caret-color: var(--accent);
+}
+
+::selection {
+  background-color: rgba(245, 158, 11, 0.22);
+  color: inherit;
+}
+
+/* Screenplay paper */
+.script-page {
+  font-family: var(--font-script);
+  font-size: 12pt;
+  line-height: 1.18;
+  color: var(--ink);
+  letter-spacing: 0;
+}
+
+.script-page .el-scene_heading {
+  font-family: var(--font-el-scene_heading, inherit);
+  text-transform: uppercase;
+  font-weight: 700;
+  margin: 1.85em 0 0.85em;
+  padding-left: 0.5in;
+  letter-spacing: 0.02em;
+}
+
+.script-page .el-scene_heading:first-child {
+  margin-top: 0;
+}
+
+.script-page .el-action {
+  font-family: var(--font-el-action, inherit);
+  margin: 0.85em 0;
+  padding-left: 0.5in;
+}
+
+.script-page .el-character {
+  font-family: var(--font-el-character, inherit);
+  text-transform: uppercase;
+  font-weight: 700;
+  margin: 1.25em 0 0;
+  padding-left: 2.5in;
+  letter-spacing: 0.02em;
+}
+
+.script-page .el-parenthetical {
+  font-family: var(--font-el-parenthetical, inherit);
+  margin: 0;
+  padding-left: 2in;
+  font-style: italic;
+}
+
+.script-page .el-dialogue {
+  font-family: var(--font-el-dialogue, inherit);
+  margin: 0 0 0.45em;
+  padding-left: 1.5in;
+  padding-right: 2in;
+}
+
+.script-page .el-transition {
+  font-family: var(--font-el-transition, inherit);
+  text-transform: uppercase;
+  font-weight: 600;
+  text-align: right;
+  margin: 1.35em 0;
+}
+
+.script-page .el-shot {
+  font-family: var(--font-el-shot, inherit);
+  text-transform: uppercase;
+  font-weight: 700;
+  margin: 1.35em 0;
+  padding-left: 0.5in;
+}
+
+/* Garante cifre maiuscole (lining figures) per i titoli in qualsiasi ambiente */
+@font-face {
+  font-family: 'HeadingLiningFigures';
+  src: local('Cambria'), local('Times New Roman');
+  unicode-range: U+0030-0039;
+}
+
+/* Novel manuscript paper (Editorial Standard: Garamond / Einaudi / Mondadori / Adelphi) */
+.novel-page {
+  font-family: 'EB Garamond', 'Lora', Cambria, 'Times New Roman', 'Palatino Linotype', Georgia, serif;
+  font-size: 12.5pt;
+  line-height: 1.85;
+  color: var(--ink);
+  font-variant-numeric: lining-nums;
+  font-feature-settings: 'lnum' 1;
+}
+
+/* Chapter Heading (H1) - Centrato, maiuscolo, spazio di respiro iniziale e prima del testo */
+.novel-page h1 {
+  font-family: var(--font-el-heading, 'HeadingLiningFigures', 'EB Garamond', 'Lora', Cambria, 'Times New Roman', 'Palatino Linotype', Georgia, serif);
+  text-align: center;
+  text-transform: uppercase;
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  padding-top: 3.5rem; /* Quota di respiro superiore ("sinkage" tipografico) */
+  margin-bottom: 3.75rem; /* Quota editoriale prima del primo paragrafo (~4 righe vuote) */
+  text-indent: 0 !important;
+  color: var(--ink);
+  font-variant-numeric: lining-nums tabular-nums;
+  font-feature-settings: 'lnum' 1;
+}
+
+.novel-page h1.is-empty::before {
+  float: none;
+  display: block;
+  text-align: center;
+  width: 100%;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.novel-page h2,
+.novel-page h3 {
+  font-family: var(--font-el-heading, 'HeadingLiningFigures', 'EB Garamond', 'Lora', Cambria, 'Times New Roman', 'Palatino Linotype', Georgia, serif);
+  font-weight: 600;
+  margin: 2em 0 0.85em;
+  text-indent: 0;
+  font-variant-numeric: lining-nums;
+  font-feature-settings: 'lnum' 1;
+}
+
+/* Paragrafi romanzo: stesso font dell'azione della sceneggiatura (Courier Prime) o personalizzato */
+.novel-page p {
+  font-family: var(--font-el-paragraph, var(--font-script));
+  font-size: 12pt;
+  line-height: 1.85;
+}
+
+.novel-page blockquote {
+  font-family: var(--font-el-blockquote, var(--font-script));
+  font-style: italic;
+}
+
+/* Paragrafi con rientro prima riga (ON di default) */
+.novel-page.with-indent p {
+  margin: 0;
+  text-indent: 1.75em;
+}
+
+/* Paragrafi con rientro disattivato (OFF) */
+.novel-page.no-indent p {
+  margin: 0 0 1em;
+  text-indent: 0;
+}
+
+/* Testo giustificato (ON di default) */
+.novel-page.text-justify p {
+  text-align: justify;
+  text-justify: inter-word;
+  hyphens: auto;
+}
+
+.ProseMirror .revision {
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+}
+
+.ProseMirror .is-empty::before {
+  content: attr(data-placeholder);
+  color: var(--ink-faint);
+  opacity: 0.35;
+  font-style: italic;
+  font-weight: 400;
+  pointer-events: none;
+  float: left;
+  height: 0;
+}

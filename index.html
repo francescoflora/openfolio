@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=EB+Garamond:ital,wght@0,400..800;1,400..800&family=Inter:wght@400;500;600;700&family=Lora:ital,wght@0,400..700;1,400..700&family=Outfit:wght@600;700;800&display=swap"
+      rel="stylesheet"
+      media="print"
+      onload="this.media='all'"
+    />
+    <noscript>
+      <link
+        href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=EB+Garamond:ital,wght@0,400..800;1,400..800&family=Inter:wght@400;500;600;700&family=Lora:ital,wght@0,400..700;1,400..700&family=Outfit:wght@600;700;800&display=swap"
+        rel="stylesheet"
+      />
+    </noscript>
+    <title>OpenFolio</title>
+    <style>
+      #root {
+        height: 100%;
+      }
+      .sf-pre-splash {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        background: #020617;
+        color: #ffffff;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        overflow: hidden;
+        user-select: none;
+      }
+      .sf-pre-bg {
+        position: absolute;
+        inset: 0;
+        background-image: url('/splash.jpg');
+        background-size: cover;
+        background-position: center;
+        opacity: 0.85;
+      }
+      .sf-pre-overlay {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(to top, #020617 0%, rgba(2, 6, 23, 0.6) 60%, rgba(2, 6, 23, 0.4) 100%);
+      }
+      .sf-pre-content {
+        position: relative;
+        z-index: 10;
+        padding: 32px;
+      }
+      .sf-pre-bar {
+        margin-top: 10px;
+        height: 4px;
+        width: 100%;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 9999px;
+        overflow: hidden;
+      }
+      .sf-pre-bar-inner {
+        height: 100%;
+        width: 45%;
+        background: linear-gradient(90deg, #d97706, #f59e0b, #fbbf24);
+        border-radius: 9999px;
+        animation: sf-slide 1.2s infinite ease-in-out;
+      }
+      @keyframes sf-slide {
+        0% { transform: translateX(-100%); }
+        50% { transform: translateX(100%); }
+        100% { transform: translateX(250%); }
+      }
+    </style>
+  </head>
+  <body style="margin: 0; background: #020617;">
+    <div id="root">
+      <div class="sf-pre-splash">
+        <div class="sf-pre-bg"></div>
+        <div class="sf-pre-overlay"></div>
+        <div class="sf-pre-content" style="display: flex; justify-content: space-between; align-items: center; padding: 24px;">
+          <span style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #fcd34d; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 9999px; padding: 2px 10px;">Studio Edition</span>
+          <span style="font-size: 12px; font-family: monospace; color: #94a3b8;">v0.1.0</span>
+        </div>
+        <div class="sf-pre-content" style="padding: 32px 32px 40px 32px;">
+          <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
+            <div style="width: 60px; height: 60px; background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 16px; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);">
+              <img src="/favicon.svg" alt="OpenFolio" style="width: 40px; height: 40px;" />
+            </div>
+            <div>
+              <div style="font-size: 32px; font-weight: 800; letter-spacing: -0.02em; color: #ffffff;">Open<span style="color: #f59e0b;">Folio</span></div>
+              <div style="font-size: 12px; color: #cbd5e1;">Sceneggiature & Romanzi · Studio Professionale</div>
+            </div>
+          </div>
+          <div style="font-size: 11px; font-family: monospace; color: #94a3b8; display: flex; align-items: center; gap: 6px;">
+            <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #f59e0b;"></span>
+            Caricamento in corso...
+          </div>
+          <div class="sf-pre-bar">
+            <div class="sf-pre-bar-inner"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
