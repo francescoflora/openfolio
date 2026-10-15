@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Editor open source per copioni e romanzi"
 authors = ["OpenFolio"]
 license = "GPL-3.0-or-later"
-repository = ""
+repository = "https://github.com/francescoflora/openfolio"
 edition = "2024"
 rust-version = "1.90"
 
