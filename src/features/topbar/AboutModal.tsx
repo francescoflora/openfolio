@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ExternalLink, X } from 'lucide-react'
-import { APP_AUTHOR, APP_LICENSE, APP_NAME, getAppVersion } from '@/core/appinfo'
+import { APP_AUTHOR, APP_LICENSE, APP_NAME, GITHUB_URL, LINKEDIN_URL, getAppVersion } from '@/core/appinfo'
+import { openExternalUrl } from '@/core/opener'
 import { uiText } from '@/core/i18n'
 import { useProject } from '@/store/useProject'
 import logo from '@/assets/logo.svg'
@@ -46,14 +47,20 @@ export function AboutModal({ onClose }: { onClose: () => void }) {
           </div>
         </dl>
 
-        <button
-          className="mt-4 flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-ink-soft opacity-60"
-          disabled
-          title={t.comingSoon}
-        >
-          <ExternalLink className="h-4 w-4" /> {t.githubRepo}
-        </button>
-        <p className="mt-2 text-center text-[11px] text-ink-faint">{t.linkInactive}</p>
+        <div className="mt-4 flex flex-col gap-2">
+          <button
+            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-ink-soft transition hover:bg-surface-2 hover:text-ink"
+            onClick={() => void openExternalUrl(GITHUB_URL)}
+          >
+            <ExternalLink className="h-4 w-4" /> {t.githubRepo}
+          </button>
+          <button
+            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-ink-soft transition hover:bg-surface-2 hover:text-ink"
+            onClick={() => void openExternalUrl(LINKEDIN_URL)}
+          >
+            <ExternalLink className="h-4 w-4" /> {t.linkedinLabel}
+          </button>
+        </div>
       </div>
     </div>
   )

@@ -15,6 +15,9 @@
     "core:window:allow-set-decorations",
     "core:window:allow-set-skip-taskbar",
     "dialog:default",
+    "updater:default",
+    "process:allow-restart",
+    "opener:default",
     {
       "identifier": "fs:allow-read-text-file",
       "allow": [{ "path": "**" }]

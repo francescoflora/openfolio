@@ -10,6 +10,7 @@ import { StatusBar } from '@/features/statusbar/StatusBar'
 import { StartScreen } from '@/features/start/StartScreen'
 import { SplashScreen } from '@/features/splash/SplashScreen'
 import { useProject } from '@/store/useProject'
+import { useUpdater } from '@/store/useUpdater'
 import { hasStoredLanguage, isTauri } from '@/core/persistence'
 import { uiText } from '@/core/i18n'
 import type { Language } from '@/core/types'
@@ -51,6 +52,10 @@ export default function App() {
   useEffect(() => {
     const s = useProject.getState()
     s.setTheme(s.theme)
+  }, [])
+
+  useEffect(() => {
+    void useUpdater.getState().check(true)
   }, [])
 
   useEffect(() => {

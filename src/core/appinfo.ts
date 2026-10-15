@@ -6,8 +6,10 @@ export const APP_LICENSE = 'GPL-3.0-or-later'
 /** Mirrors package.json / tauri.conf.json versions. */
 export const APP_VERSION_FALLBACK = '0.1.0'
 
-/** Placeholder — pagina GitHub del progetto (da definire). */
+/** Pagina GitHub del progetto. */
 export const GITHUB_URL = 'https://github.com/francescoflora/openfolio'
+/** Profilo LinkedIn dell'autore. */
+export const LINKEDIN_URL = 'https://www.linkedin.com/in/francesco-flora-975885187/'
 
 export async function getAppVersion(): Promise<string> {
   if (isTauri()) {

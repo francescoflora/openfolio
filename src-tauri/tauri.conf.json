@@ -32,6 +32,7 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "createUpdaterArtifacts": true,
     "category": "Productivity",
     "shortDescription": "Editor open source per copioni e romanzi",
     "longDescription": "OpenFolio e un editor open source per scrivere copioni (screenplay) e romanzi, con Binder, corkboard, outline, snapshot, revisioni ed export FDX/Fountain/DOCX/EPUB/PDF.",
@@ -72,6 +73,17 @@
     ],
     "android": {
       "debugApplicationIdSuffix": ".debug"
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDQ0NjRBMjgxMUVBQ0MyM0MKUldROHdxd2VnYUprUlBuU2szUmpqeXRlL2I1dVlNNjJYWnVSTTBzVlRaeVF4cXdyTzB3aU1rYlUK",
+      "endpoints": [
+        "https://github.com/francescoflora/openfolio/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
     }
   }
 }
