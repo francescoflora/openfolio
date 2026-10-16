@@ -23,10 +23,6 @@ has_doc_icon:
   WriteRegStr HKCU "Software\Classes\OpenFolio Document\shell\open\command" "" '"$INSTDIR\OpenFolio.exe" "%1"'
   WriteRegStr HKCR "OpenFolio Document\shell\open\command" "" '"$INSTDIR\OpenFolio.exe" "%1"'
 
-  ; Retrocompatibilita per file legacy .scriptforge
-  WriteRegStr HKCU "Software\Classes\ScriptForge Legacy Document\DefaultIcon" "" '"$0",0'
-  WriteRegStr HKCR "ScriptForge Legacy Document\DefaultIcon" "" '"$0",0'
-
   ; Salva la lingua scelta durante l'installazione (1040 = Italiano, altrimenti English)
   StrCpy $2 "en"
   StrCmp $LANGUAGE "1040" 0 +2
@@ -46,7 +42,5 @@ has_doc_icon:
   DeleteRegKey HKCU "Software\Classes\.openfolio"
   DeleteRegKey HKCR "OpenFolio Document"
   DeleteRegKey HKCR ".openfolio"
-  DeleteRegKey HKCU "Software\Classes\ScriptForge Legacy Document"
-  DeleteRegKey HKCR "ScriptForge Legacy Document"
   System::Call 'shell32.dll::SHChangeNotify(i 0x08000000, i 0, i 0, i 0)'
 !macroend

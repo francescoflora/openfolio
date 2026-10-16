@@ -70,7 +70,7 @@ pub fn scenes_to_fdx(scenes: &[SceneDoc]) -> Result<String, String> {
     Ok(format!("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\" ?>\n{}", xml))
 }
 
-/// Parse a Final Draft XML string into ScriptForge scenes.
+/// Parse a Final Draft XML string into OpenFolio scenes.
 pub fn fdx_to_scenes(xml: &str) -> Result<Vec<SceneDoc>, String> {
     let mut reader = Reader::from_str(xml);
     reader.config_mut().trim_text(true);

@@ -114,7 +114,7 @@ fn inline_text(node: &JsonContent) -> String {
     s
 }
 
-/// Parse a Fountain text string into a list of ScriptForge SceneDocs.
+/// Parse a Fountain text string into a list of OpenFolio SceneDocs.
 /// Scenes are split on scene headings so each scene becomes a binder document.
 pub fn fountain_to_scenes(text: &str) -> Vec<SceneDoc> {
     let normalized = text.replace("\r\n", "\n").replace('\r', "\n");

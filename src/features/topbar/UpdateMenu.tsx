@@ -9,7 +9,7 @@ import { cn } from '@/lib/cn'
 export function UpdateMenu() {
   const [open, setOpen] = useState(false)
   const [version, setVersion] = useState('…')
-  const lang = useProject((s) => s.project?.settings.language ?? s.language)
+  const lang = useProject((s) => s.language)
   const t = uiText(lang)
   const { status, version: newVersion, notes, progress, error, check, install } = useUpdater()
 

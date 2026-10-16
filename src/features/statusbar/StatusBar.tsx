@@ -8,7 +8,7 @@ import { uiText } from '@/core/i18n'
 export function StatusBar() {
   const binder = useProject((s) => s.project?.binder)
   const mode = useProject((s) => s.project?.mode)
-  const lang = useProject((s) => s.project?.settings.language ?? s.language)
+  const lang = useProject((s) => s.language)
   const selectedId = useProject((s) => s.selectedId)
   const zoom = useProject((s) => s.zoom ?? 100)
   const setZoom = useProject((s) => s.setZoom)

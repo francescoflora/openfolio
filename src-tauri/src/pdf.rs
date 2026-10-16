@@ -130,10 +130,15 @@ fn render_title_page(
     if let Some(ref author) = payload.author
         && !author.trim().is_empty() {
             let by_y = title_y - 20.0;
+            let is_en = payload
+                .language
+                .as_deref()
+                .map(|l| l.eq_ignore_ascii_case("en"))
+                .unwrap_or(false);
             let by_text = if is_novel {
-                format!("di {}", author)
+                if is_en { format!("by {}", author) } else { format!("di {}", author) }
             } else {
-                format!("scritto da\n\n{}", author)
+                if is_en { format!("written by\n\n{}", author) } else { format!("scritto da\n\n{}", author) }
             };
 
             let mut cur_y = by_y;
@@ -252,8 +257,8 @@ fn render_screenplay_pages(
     init_page(&mut cur_ops, page_num, &mut cur_y);
 
     for (s_idx, scene) in payload.scenes.iter().enumerate() {
-        // Scene break (each scene starts on new page if multi-scene project, or flows)
-        if s_idx > 0 && cur_y < page_h - top_margin - (line_height_mm * 4.0) {
+        // Scene break: each scene starts on a new page
+        if s_idx > 0 {
             // New page on scene break
             cur_ops.push(Op::RestoreGraphicsState);
             pdf_pages.push(PdfPage::new(Mm(page_w), Mm(page_h), std::mem::take(&mut cur_ops)));
@@ -554,6 +559,7 @@ mod tests {
             mode: "screenplay".to_string(),
             author: Some("Jane Doe".to_string()),
             contact: Some("jane@example.com".to_string()),
+            language: None,
             font_family: None,
             font_size_pt: None,
             justify: None,
@@ -607,6 +613,7 @@ mod tests {
             mode: "novel".to_string(),
             author: Some("Mario Rossi".to_string()),
             contact: None,
+            language: None,
             font_family: None,
             font_size_pt: Some(12.0),
             justify: Some(true),
@@ -646,6 +653,7 @@ mod tests {
             mode: "screenplay".to_string(),
             author: Some("Autore".to_string()),
             contact: None,
+            language: None,
             font_family: None,
             font_size_pt: Some(12.0),
             justify: None,
@@ -683,5 +691,111 @@ mod tests {
         let bytes = generate_pdf(&payload).expect("Failed to generate Screenplay with section heading PDF");
         assert!(bytes.len() > 100);
         assert_eq!(&bytes[0..4], b"%PDF");
+    }
+
+    #[test]
+    fn test_generate_pdf_screenplay_multi_scene_breaks_page() {
+        let payload = PdfExportPayload {
+            title: "Screenplay Multi".to_string(),
+            mode: "screenplay".to_string(),
+            author: None,
+            contact: None,
+            language: None,
+            font_family: None,
+            font_size_pt: Some(12.0),
+            justify: None,
+            indent: None,
+            has_title_page: Some(false),
+            page_size: Some("letter".to_string()),
+            scenes: vec![
+                SceneDoc {
+                    r#type: "doc".to_string(),
+                    content: vec![
+                        JsonContent {
+                            r#type: Some("scene_heading".to_string()),
+                            attrs: None,
+                            content: None,
+                            marks: None,
+                            text: Some("INT. PRIMA - GIORNO".to_string()),
+                        },
+                        JsonContent {
+                            r#type: Some("action".to_string()),
+                            attrs: None,
+                            content: None,
+                            marks: None,
+                            text: Some("Prima scena corta.".to_string()),
+                        },
+                    ],
+                },
+                SceneDoc {
+                    r#type: "doc".to_string(),
+                    content: vec![
+                        JsonContent {
+                            r#type: Some("scene_heading".to_string()),
+                            attrs: None,
+                            content: None,
+                            marks: None,
+                            text: Some("EXT. SECONDA - NOTTE".to_string()),
+                        },
+                        JsonContent {
+                            r#type: Some("action".to_string()),
+                            attrs: None,
+                            content: None,
+                            marks: None,
+                            text: Some("Seconda scena su nuova pagina.".to_string()),
+                        },
+                    ],
+                },
+            ],
+        };
+
+        let pages = render_screenplay_pages(&payload, 215.9, 279.4);
+        assert_eq!(pages.len(), 2, "Expected 2 pages for 2 scenes in screenplay mode");
+    }
+
+    #[test]
+    fn test_generate_pdf_novel_multi_scene_breaks_page() {
+        let payload = PdfExportPayload {
+            title: "Novel Multi".to_string(),
+            mode: "novel".to_string(),
+            author: None,
+            contact: None,
+            language: None,
+            font_family: None,
+            font_size_pt: Some(12.0),
+            justify: None,
+            indent: None,
+            has_title_page: Some(false),
+            page_size: Some("letter".to_string()),
+            scenes: vec![
+                SceneDoc {
+                    r#type: "doc".to_string(),
+                    content: vec![
+                        JsonContent {
+                            r#type: Some("paragraph".to_string()),
+                            attrs: None,
+                            content: None,
+                            marks: None,
+                            text: Some("Paragrafo scena 1.".to_string()),
+                        },
+                    ],
+                },
+                SceneDoc {
+                    r#type: "doc".to_string(),
+                    content: vec![
+                        JsonContent {
+                            r#type: Some("paragraph".to_string()),
+                            attrs: None,
+                            content: None,
+                            marks: None,
+                            text: Some("Paragrafo scena 2.".to_string()),
+                        },
+                    ],
+                },
+            ],
+        };
+
+        let pages = render_novel_pages(&payload, 215.9, 279.4);
+        assert_eq!(pages.len(), 2, "Expected 2 pages for 2 scenes in novel mode");
     }
 }

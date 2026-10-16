@@ -2,7 +2,7 @@ import type { Project } from './types'
 import type { SceneDoc } from './json'
 
 export interface ProjectFile {
-  app: 'openfolio' | 'scriptforge'
+  app: 'openfolio'
   version: number
   project: Project
   scenes: Record<string, SceneDoc>

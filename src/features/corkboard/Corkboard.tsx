@@ -5,7 +5,7 @@ import { cn } from '@/lib/cn'
 
 function Card({ node }: { node: BinderNode }) {
   const selected = useProject((s) => s.selectedId === node.id)
-  const language = useProject((s) => s.project?.settings.language ?? s.language)
+  const language = useProject((s) => s.language)
   const select = useProject((s) => s.select)
   const setView = useProject((s) => s.setView)
   const meta = node.metadata

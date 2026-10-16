@@ -44,7 +44,6 @@ export function saveDefaultLanguage(lang: Language): void {
 // ---------------------------------------------------------------------------
 
 const RECENT_KEY = 'openfolio.recent'
-const LEGACY_RECENT_KEY = 'scriptforge.recent'
 export const MAX_RECENT = 8
 
 export interface RecentProject {
@@ -61,7 +60,7 @@ export function upsertRecent(list: RecentProject[], entry: RecentProject, max = 
 
 export function listRecent(): RecentProject[] {
   try {
-    const raw = localStorage.getItem(RECENT_KEY) ?? localStorage.getItem(LEGACY_RECENT_KEY)
+    const raw = localStorage.getItem(RECENT_KEY)
     return raw ? (JSON.parse(raw) as RecentProject[]) : []
   } catch {
     return []
@@ -82,7 +81,6 @@ export function removeRecent(path: string): void {
 // ---------------------------------------------------------------------------
 
 const VIEW_KEY = 'openfolio.lastview'
-const LEGACY_VIEW_KEY = 'scriptforge.lastview'
 
 export interface LastView {
   sceneId: string
@@ -91,7 +89,7 @@ export interface LastView {
 
 export function loadLastView(projectId: string): LastView | undefined {
   try {
-    const raw = localStorage.getItem(VIEW_KEY) ?? localStorage.getItem(LEGACY_VIEW_KEY)
+    const raw = localStorage.getItem(VIEW_KEY)
     const map = raw ? (JSON.parse(raw) as Record<string, LastView>) : {}
     return map[projectId]
   } catch {
@@ -115,12 +113,11 @@ export function saveLastView(projectId: string, view: LastView): void {
 // ---------------------------------------------------------------------------
 
 const DEFAULT_FONTS_KEY_PREFIX = 'openfolio.defaultElementFonts.'
-const LEGACY_FONTS_KEY_PREFIX = 'scriptforge.defaultElementFonts.'
 
 export function loadDefaultElementFonts(mode: ProjectMode): Record<string, string> {
   try {
     if (typeof localStorage === 'undefined') return {}
-    const raw = localStorage.getItem(`${DEFAULT_FONTS_KEY_PREFIX}${mode}`) ?? localStorage.getItem(`${LEGACY_FONTS_KEY_PREFIX}${mode}`)
+    const raw = localStorage.getItem(`${DEFAULT_FONTS_KEY_PREFIX}${mode}`)
     return raw ? (JSON.parse(raw) as Record<string, string>) : {}
   } catch {
     return {}
@@ -132,7 +129,6 @@ export function saveDefaultElementFonts(mode: ProjectMode, fonts: Record<string,
     if (typeof localStorage === 'undefined') return
     if (!fonts || Object.keys(fonts).length === 0) {
       localStorage.removeItem(`${DEFAULT_FONTS_KEY_PREFIX}${mode}`)
-      localStorage.removeItem(`${LEGACY_FONTS_KEY_PREFIX}${mode}`)
     } else {
       localStorage.setItem(`${DEFAULT_FONTS_KEY_PREFIX}${mode}`, JSON.stringify(fonts))
     }
@@ -146,12 +142,9 @@ export function resetDefaultElementFonts(mode?: ProjectMode): void {
     if (typeof localStorage === 'undefined') return
     if (mode) {
       localStorage.removeItem(`${DEFAULT_FONTS_KEY_PREFIX}${mode}`)
-      localStorage.removeItem(`${LEGACY_FONTS_KEY_PREFIX}${mode}`)
     } else {
       localStorage.removeItem(`${DEFAULT_FONTS_KEY_PREFIX}screenplay`)
       localStorage.removeItem(`${DEFAULT_FONTS_KEY_PREFIX}novel`)
-      localStorage.removeItem(`${LEGACY_FONTS_KEY_PREFIX}screenplay`)
-      localStorage.removeItem(`${LEGACY_FONTS_KEY_PREFIX}novel`)
     }
   } catch {
     /* ignore */
@@ -163,12 +156,11 @@ export function resetDefaultElementFonts(mode?: ProjectMode): void {
 // ---------------------------------------------------------------------------
 
 const DEFAULT_AUTO_PARENTHESES_KEY = 'openfolio.defaultAutoParentheses'
-const LEGACY_AUTO_PARENTHESES_KEY = 'scriptforge.defaultAutoParentheses'
 
 export function loadDefaultAutoParentheses(): boolean {
   try {
     if (typeof localStorage === 'undefined') return true
-    const raw = localStorage.getItem(DEFAULT_AUTO_PARENTHESES_KEY) ?? localStorage.getItem(LEGACY_AUTO_PARENTHESES_KEY)
+    const raw = localStorage.getItem(DEFAULT_AUTO_PARENTHESES_KEY)
     return raw !== null ? JSON.parse(raw) === true : true
   } catch {
     return true
@@ -188,7 +180,6 @@ export function resetDefaultAutoParentheses(): void {
   try {
     if (typeof localStorage === 'undefined') return
     localStorage.removeItem(DEFAULT_AUTO_PARENTHESES_KEY)
-    localStorage.removeItem(LEGACY_AUTO_PARENTHESES_KEY)
   } catch {
     /* ignore */
   }

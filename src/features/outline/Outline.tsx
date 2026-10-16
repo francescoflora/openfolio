@@ -6,7 +6,7 @@ import { cn } from '@/lib/cn'
 export function Outline() {
   const binder = useProject((s) => s.project?.binder)
   const selectedId = useProject((s) => s.selectedId)
-  const language = useProject((s) => s.project?.settings.language ?? s.language)
+  const language = useProject((s) => s.language)
   const select = useProject((s) => s.select)
   const setView = useProject((s) => s.setView)
   const statusLabel = statusLabels(language)

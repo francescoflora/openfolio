@@ -8,13 +8,14 @@ const label = 'mb-1 block text-[11px] uppercase tracking-wide text-ink-faint'
 
 export function TitlePageModal({ onClose }: { onClose: () => void }) {
   const project = useProject((s) => s.project)
+  const lang = useProject((s) => s.language)
   const setProjectTitle = useProject((s) => s.setProjectTitle)
   const updateSettings = useProject((s) => s.updateSettings)
   if (!project) return null
 
   const s = project.settings
   const tp = s.titlePage ?? {}
-  const t = uiText(s.language)
+  const t = uiText(lang)
 
   const setTitle = (title: string) => {
     setProjectTitle(title)

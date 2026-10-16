@@ -56,6 +56,7 @@ export interface NativePdfPayload {
   mode: string
   author?: string
   contact?: string
+  language?: string
   font_family?: string
   font_size_pt?: number
   justify?: boolean

@@ -8,7 +8,7 @@ import logo from '@/assets/logo.svg'
 
 export function AboutModal({ onClose }: { onClose: () => void }) {
   const [version, setVersion] = useState('…')
-  const lang = useProject((s) => s.project?.settings.language ?? s.language)
+  const lang = useProject((s) => s.language)
   const t = uiText(lang)
 
   useEffect(() => {
