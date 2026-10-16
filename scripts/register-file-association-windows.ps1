@@ -1,5 +1,5 @@
 # OpenFolio - Registrazione Associazione File e Icona Documento in Windows
-# Questo script registra l'estensione .openfolio in Windows Explorer con l'icona personalizzata del documento.
+# Questo script registra le estensioni .ofp (default) e .openfolio (legacy) in Windows Explorer con l'icona personalizzata del documento.
 
 param (
     [string]$IconPath = "$PSScriptRoot\..\src-tauri\icons\document.ico",
@@ -9,31 +9,40 @@ param (
 $IconFullPath = [System.IO.Path]::GetFullPath($IconPath)
 $ExeFullPath = [System.IO.Path]::GetFullPath($ExePath)
 
-Write-Host "Registrazione associazione file .openfolio in corso..." -ForegroundColor Cyan
+Write-Host "Registrazione associazione file .ofp e .openfolio in corso..." -ForegroundColor Cyan
 Write-Host "Icona documento: $IconFullPath" -ForegroundColor Gray
 
-# 1. Registra l'estensione .openfolio
+# 1. Registra l'estensione predefinita .ofp (OpenFolio Project)
+New-Item -Path "HKCU:\Software\Classes\.ofp" -Force | Out-Null
+Set-ItemProperty -Path "HKCU:\Software\Classes\.ofp" -Name "(Default)" -Value "OpenFolio.Project"
+Set-ItemProperty -Path "HKCU:\Software\Classes\.ofp" -Name "Content Type" -Value "application/x-openfolio"
+
+# 2. Registra l'estensione legacy .openfolio per retrocompatibilità
 New-Item -Path "HKCU:\Software\Classes\.openfolio" -Force | Out-Null
-Set-ItemProperty -Path "HKCU:\Software\Classes\.openfolio" -Name "(Default)" -Value "OpenFolio.Document"
+Set-ItemProperty -Path "HKCU:\Software\Classes\.openfolio" -Name "(Default)" -Value "OpenFolio.Project"
 Set-ItemProperty -Path "HKCU:\Software\Classes\.openfolio" -Name "Content Type" -Value "application/x-openfolio"
 
-# 2. Registra il ProgID OpenFolio.Document
-New-Item -Path "HKCU:\Software\Classes\OpenFolio.Document" -Force | Out-Null
-Set-ItemProperty -Path "HKCU:\Software\Classes\OpenFolio.Document" -Name "(Default)" -Value "Documento di Scrittura OpenFolio"
+# 3. Registra il ProgID OpenFolio.Project
+New-Item -Path "HKCU:\Software\Classes\OpenFolio.Project" -Force | Out-Null
+Set-ItemProperty -Path "HKCU:\Software\Classes\OpenFolio.Project" -Name "(Default)" -Value "Progetto OpenFolio (OpenFolio Project)"
 
-# 3. Associa l'icona dedicata del documento
+# 4. Associa l'icona dedicata del documento
 if (Test-Path $IconFullPath) {
-    New-Item -Path "HKCU:\Software\Classes\OpenFolio.Document\DefaultIcon" -Force | Out-Null
-    Set-ItemProperty -Path "HKCU:\Software\Classes\OpenFolio.Document\DefaultIcon" -Name "(Default)" -Value "`"$IconFullPath`",0"
+    New-Item -Path "HKCU:\Software\Classes\OpenFolio.Project\DefaultIcon" -Force | Out-Null
+    Set-ItemProperty -Path "HKCU:\Software\Classes\OpenFolio.Project\DefaultIcon" -Name "(Default)" -Value "`"$IconFullPath`",0"
+    New-Item -Path "HKCU:\Software\Classes\.ofp\DefaultIcon" -Force | Out-Null
+    Set-ItemProperty -Path "HKCU:\Software\Classes\.ofp\DefaultIcon" -Name "(Default)" -Value "`"$IconFullPath`",0"
+    New-Item -Path "HKCU:\Software\Classes\.openfolio\DefaultIcon" -Force | Out-Null
+    Set-ItemProperty -Path "HKCU:\Software\Classes\.openfolio\DefaultIcon" -Name "(Default)" -Value "`"$IconFullPath`",0"
     Write-Host "Icona documento registrata con successo!" -ForegroundColor Green
 } else {
     Write-Warning "File icona non trovato in $IconFullPath"
 }
 
-# 4. Associa il comando di apertura (se l'eseguibile esiste)
+# 5. Associa il comando di apertura (se l'eseguibile esiste)
 if (Test-Path $ExeFullPath) {
-    New-Item -Path "HKCU:\Software\Classes\OpenFolio.Document\shell\open\command" -Force | Out-Null
-    Set-ItemProperty -Path "HKCU:\Software\Classes\OpenFolio.Document\shell\open\command" -Name "(Default)" -Value "`"$ExeFullPath`" `"%1`""
+    New-Item -Path "HKCU:\Software\Classes\OpenFolio.Project\shell\open\command" -Force | Out-Null
+    Set-ItemProperty -Path "HKCU:\Software\Classes\OpenFolio.Project\shell\open\command" -Name "(Default)" -Value "`"$ExeFullPath`" `"%1`""
     Write-Host "Comando di apertura associato a $ExeFullPath" -ForegroundColor Green
 }
 

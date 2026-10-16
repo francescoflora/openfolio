@@ -129,13 +129,33 @@ export function Inspector() {
       </div>
       <ul className="flex flex-col gap-1">
         {snaps.map((s) => (
-          <li key={s.id} className="flex items-center gap-1 rounded-md bg-surface-2 px-2 py-1 text-xs">
-            <span className="flex-1 truncate text-ink-soft">{s.label}</span>
-            <span className="text-ink-faint">{s.words}p</span>
-            <button title={t.restoreTitle} className="rounded p-0.5 hover:bg-surface" onClick={() => restoreSnapshot(node.id, s.id)}>
+          <li
+            key={s.id}
+            className="group flex items-center gap-1.5 rounded-md bg-surface-2 px-2 py-1 text-xs transition hover:bg-surface-2/80"
+          >
+            <button
+              type="button"
+              className="flex-1 truncate text-left text-ink-soft hover:text-ink cursor-pointer transition hover:underline"
+              onClick={() => restoreSnapshot(node.id, s.id)}
+              title={t.restoreTitle}
+            >
+              {s.label}
+            </button>
+            <span className="text-[11px] text-ink-faint shrink-0">{s.words} {t.wordsUnit ? t.wordsUnit.slice(0, 1) : 'p'}</span>
+            <button
+              type="button"
+              title={t.restoreTitle}
+              className="rounded p-1 text-ink-soft hover:bg-surface hover:text-ink transition cursor-pointer"
+              onClick={() => restoreSnapshot(node.id, s.id)}
+            >
               <RotateCcw className="h-3.5 w-3.5" />
             </button>
-            <button title={t.deleteTitle} className="rounded p-0.5 hover:bg-surface" onClick={() => deleteSnapshot(node.id, s.id)}>
+            <button
+              type="button"
+              title={t.deleteTitle}
+              className="rounded p-1 text-ink-soft hover:bg-surface hover:text-rose-500 transition cursor-pointer"
+              onClick={() => deleteSnapshot(node.id, s.id)}
+            >
               <Trash2 className="h-3.5 w-3.5" />
             </button>
           </li>

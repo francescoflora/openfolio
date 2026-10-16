@@ -262,3 +262,29 @@ select:disabled {
   float: left;
   height: 0;
 }
+
+.script-page .el-transition.is-empty::before {
+  float: right;
+  text-align: right;
+}
+
+@keyframes indeterminateProgress {
+  0% {
+    transform: translateX(-100%);
+    width: 35%;
+  }
+  50% {
+    transform: translateX(100%);
+    width: 55%;
+  }
+  100% {
+    transform: translateX(300%);
+    width: 35%;
+  }
+}
+
+.animate-indeterminate-progress {
+  animation: indeterminateProgress 1.35s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+

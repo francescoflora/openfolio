@@ -1,13 +1,20 @@
 import { useState } from 'react'
 import type { DragEvent } from 'react'
-import { ChevronRight, FileText, Folder, FolderOpen, Plus, Trash2 } from 'lucide-react'
+import { ChevronRight, FileText, Folder, FolderOpen, LayoutGrid, List, PenLine, Plus, Trash2 } from 'lucide-react'
 import type { BinderNode } from '@/core/types'
 import type { DropPosition } from '@/core/tree'
 import { findParent } from '@/core/tree'
 import { uiText } from '@/core/i18n'
 import { useProject } from '@/store/useProject'
+import type { ViewMode } from '@/store/useProject'
 import { SearchBox } from '@/features/search/SearchBox'
 import { cn } from '@/lib/cn'
+
+const VIEWS: { id: ViewMode; icon: typeof PenLine; label: string }[] = [
+  { id: 'editor', icon: PenLine, label: 'Editor' },
+  { id: 'corkboard', icon: LayoutGrid, label: 'Corkboard' },
+  { id: 'outline', icon: List, label: 'Outline' },
+]
 
 function RowIcon({ node, open }: { node: BinderNode; open: boolean }) {
   if (node.kind === 'folder') {
@@ -181,6 +188,8 @@ function NodeRow({ node, depth, dragId, onDragId, over, onOver }: { node: Binder
 export function Binder() {
   const binder = useProject((s) => s.project?.binder)
   const lang = useProject((s) => s.language)
+  const view = useProject((s) => s.view)
+  const setView = useProject((s) => s.setView)
   const addFolder = useProject((s) => s.addFolder)
   const addScene = useProject((s) => s.addScene)
   const selectedId = useProject((s) => s.selectedId)
@@ -197,9 +206,29 @@ export function Binder() {
 
   return (
     <aside className="flex w-72 shrink-0 flex-col border-r border-border bg-surface">
-      <div className="flex h-9 shrink-0 items-center justify-between border-b border-border px-3">
-        <span className="text-xs font-semibold uppercase tracking-wide text-ink-faint">{t.binderTitle}</span>
-        <div className="flex items-center gap-1">
+      <div className="flex h-9 shrink-0 items-center border-b border-border px-3 gap-1">
+        <span className="text-xs font-semibold uppercase tracking-wide text-ink-faint shrink-0">{t.binderTitle}</span>
+        <div className="flex flex-1 items-center justify-center">
+          <div className="flex items-center gap-0.5 rounded-lg bg-surface-2 p-0.5">
+            {VIEWS.map((v) => {
+              const Icon = v.icon
+              return (
+                <button
+                  key={v.id}
+                  title={v.label}
+                  className={cn(
+                    'flex items-center justify-center rounded p-1 cursor-pointer transition-colors',
+                    view === v.id ? 'bg-surface text-ink shadow-xs' : 'text-ink-soft hover:text-ink',
+                  )}
+                  onClick={() => setView(v.id)}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                </button>
+              )
+            })}
+          </div>
+        </div>
+        <div className="flex items-center gap-1 shrink-0">
           <button
             title={t.addSectionTitle}
             className="rounded p-1 text-ink-soft hover:bg-surface-2 cursor-pointer"

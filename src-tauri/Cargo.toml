@@ -1,6 +1,6 @@
 [package]
 name = "openfolio"
-version = "0.1.1"
+version = "0.1.2"
 description = "Editor open source per copioni e romanzi"
 authors = ["OpenFolio"]
 license = "GPL-3.0-or-later"

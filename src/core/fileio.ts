@@ -23,7 +23,7 @@ function browserDownload(filename: string, data: string | Uint8Array, mime: stri
 }
 
 function mimeForExt(ext: string): string {
-  if (ext === 'openfolio' || ext === 'json') return 'application/json'
+  if (ext === 'ofp' || ext === 'openfolio' || ext === 'json') return 'application/json'
   if (ext === 'fdx') return 'application/xml'
   if (ext === 'md') return 'text/markdown'
   return 'text/plain'
@@ -66,10 +66,10 @@ async function writeHandle(handle: FsFileHandle, text: string): Promise<void> {
 }
 
 /** Pick and read a text file — native dialog under Tauri, File System Access API or `<input>` otherwise. */
-export async function openTextFile(extensions: string[]): Promise<OpenedFile | null> {
+export async function openTextFile(extensions: string[], filterName = 'Documento'): Promise<OpenedFile | null> {
   if (isTauri()) {
     const { open } = await import('@tauri-apps/plugin-dialog')
-    const path = await open({ multiple: false, filters: [{ name: 'Documento', extensions }] })
+    const path = await open({ multiple: false, filters: [{ name: filterName, extensions }] })
     if (!path || typeof path !== 'string') return null
     const { readTextFile } = await import('@tauri-apps/plugin-fs')
     const name = path.split(/[\\/]/).pop() ?? 'import'
@@ -109,17 +109,18 @@ export async function saveExport(
   data: string | Uint8Array,
   mime: string,
   filters?: SaveFilter[],
-): Promise<void> {
+): Promise<boolean> {
   if (isTauri()) {
     const { save } = await import('@tauri-apps/plugin-dialog')
     const path = await save({ defaultPath: filename, filters })
-    if (!path) return
+    if (!path) return false
     const fs = await import('@tauri-apps/plugin-fs')
     if (typeof data === 'string') await fs.writeTextFile(path, data)
     else await fs.writeFile(path, data)
-    return
+    return true
   }
   browserDownload(filename, data, mime)
+  return true
 }
 
 /** Read a text file by absolute path (Tauri only). */
@@ -163,7 +164,7 @@ export async function saveDocument(
     try {
       const handle = await w.showSaveFilePicker({
         suggestedName: defaultName,
-        types: pickerTypes(filters[0]?.extensions ?? ['openfolio']),
+        types: pickerTypes(filters[0]?.extensions ?? ['ofp', 'openfolio']),
       })
       currentHandle = handle
       await writeHandle(handle, text)

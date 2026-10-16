@@ -66,8 +66,9 @@ export function StatusBar() {
 
       {/* Center: Conteggio parole e battute per capitolo / scena */}
       {current && (
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden sm:flex items-center gap-1.5 text-ink-soft pointer-events-none truncate max-w-[36%]">
-          <span className="font-medium text-ink truncate">{current.title}:</span>
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden sm:flex items-center gap-2 text-ink-soft pointer-events-none truncate max-w-[36%]">
+          <span className="truncate">{current.title?.toLowerCase()}</span>
+          <span className="text-border">|</span>
           <span>{currentWords.toLocaleString(locale)} {t.wordsUnit}</span>
           <span className="text-border">·</span>
           <span>{currentChars.toLocaleString(locale)} {t.charsUnit}</span>

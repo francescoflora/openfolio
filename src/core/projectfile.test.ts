@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { parseProjectFile, serializeProjectFile } from './projectfile'
+import {
+  parseProjectFile,
+  serializeProjectFile,
+  PROJECT_EXTENSION,
+  LEGACY_PROJECT_EXTENSION,
+  SUPPORTED_PROJECT_EXTENSIONS,
+} from './projectfile'
 import type { Project } from './types'
 import type { SceneDoc } from './json'
 
@@ -30,6 +36,12 @@ describe('project file', () => {
     const { project: p, scenes: s } = parseProjectFile(serializeProjectFile(project, scenes))
     expect(p).toEqual(project)
     expect(s).toEqual(scenes)
+  })
+
+  it('exposes ofp as default extension with openfolio backward compatibility', () => {
+    expect(PROJECT_EXTENSION).toBe('ofp')
+    expect(LEGACY_PROJECT_EXTENSION).toBe('openfolio')
+    expect(SUPPORTED_PROJECT_EXTENSIONS).toEqual(['ofp', 'openfolio'])
   })
 
   it('rejects an invalid file', () => {

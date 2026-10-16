@@ -14,12 +14,18 @@
 
 has_doc_icon:
   ; Registra DefaultIcon per ProgID e classi file in HKCU (Current User) e HKCR (Classes Root)
+  WriteRegStr HKCU "Software\Classes\OpenFolio Project\DefaultIcon" "" '"$0",0'
   WriteRegStr HKCU "Software\Classes\OpenFolio Document\DefaultIcon" "" '"$0",0'
+  WriteRegStr HKCU "Software\Classes\.ofp\DefaultIcon" "" '"$0",0'
   WriteRegStr HKCU "Software\Classes\.openfolio\DefaultIcon" "" '"$0",0'
+  WriteRegStr HKCR "OpenFolio Project\DefaultIcon" "" '"$0",0'
   WriteRegStr HKCR "OpenFolio Document\DefaultIcon" "" '"$0",0'
+  WriteRegStr HKCR ".ofp\DefaultIcon" "" '"$0",0'
   WriteRegStr HKCR ".openfolio\DefaultIcon" "" '"$0",0'
 
   ; Registra associazione con comando open se non impostata
+  WriteRegStr HKCU "Software\Classes\OpenFolio Project\shell\open\command" "" '"$INSTDIR\OpenFolio.exe" "%1"'
+  WriteRegStr HKCR "OpenFolio Project\shell\open\command" "" '"$INSTDIR\OpenFolio.exe" "%1"'
   WriteRegStr HKCU "Software\Classes\OpenFolio Document\shell\open\command" "" '"$INSTDIR\OpenFolio.exe" "%1"'
   WriteRegStr HKCR "OpenFolio Document\shell\open\command" "" '"$INSTDIR\OpenFolio.exe" "%1"'
 
@@ -38,9 +44,13 @@ has_doc_icon:
 !macro NSIS_HOOK_POSTUNINSTALL
   ; Pulizia completa delle chiavi di registro alla disinstallazione
   Delete "$INSTDIR\lang.txt"
+  DeleteRegKey HKCU "Software\Classes\OpenFolio Project"
   DeleteRegKey HKCU "Software\Classes\OpenFolio Document"
+  DeleteRegKey HKCU "Software\Classes\.ofp"
   DeleteRegKey HKCU "Software\Classes\.openfolio"
+  DeleteRegKey HKCR "OpenFolio Project"
   DeleteRegKey HKCR "OpenFolio Document"
+  DeleteRegKey HKCR ".ofp"
   DeleteRegKey HKCR ".openfolio"
   System::Call 'shell32.dll::SHChangeNotify(i 0x08000000, i 0, i 0, i 0)'
 !macroend

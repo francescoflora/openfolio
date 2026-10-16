@@ -18,12 +18,20 @@ import {
   saveLastView,
 } from '@/core/persistence'
 import { openTextFile, readTextFromPath, resetDocumentTarget, saveDocument } from '@/core/fileio'
-import { parseProjectFile, serializeProjectFile, PROJECT_EXTENSION } from '@/core/projectfile'
+import { parseProjectFile, serializeProjectFile, PROJECT_EXTENSION, SUPPORTED_PROJECT_EXTENSIONS } from '@/core/projectfile'
 import { nativeImportFdx, nativeImportFountain } from '@/core/native'
 import { countChars, countWords, slug, textOf } from '@/core/stats'
 
 export type Theme = 'light' | 'dark'
 export type ViewMode = 'editor' | 'corkboard' | 'outline'
+
+export interface OperationState {
+  id: number
+  type: 'save' | 'export'
+  status: 'busy' | 'success' | 'error'
+  title: string
+  subtitle?: string
+}
 
 function makeScene(title: string, wordCount = 0, charCount = 0): BinderNode {
   return { id: nanoid(), title, kind: 'scene', metadata: { status: 'draft', wordCount, charCount } }
@@ -196,6 +204,10 @@ interface State {
   inspectorOpen: boolean
   zoom: number
   toast: { id: number; message: string } | null
+  operation: OperationState | null
+  startOperation: (type: 'save' | 'export', title: string, subtitle?: string) => number
+  finishOperation: (status: 'success' | 'error', title: string, subtitle?: string, timeoutMs?: number) => void
+  dismissOperation: () => void
   setTheme: (t: Theme) => void
   setLanguage: (lang: Language) => void
   setView: (v: ViewMode) => void
@@ -242,11 +254,41 @@ export const useProject = create<State>((set, get) => ({
   inspectorOpen: false,
   zoom: initialZoom(),
   toast: null,
+  operation: null,
+
+  startOperation: (type, title, subtitle) => {
+    const id = Date.now()
+    set({ operation: { id, type, status: 'busy', title, subtitle } })
+    return id
+  },
+
+  finishOperation: (status, title, subtitle, timeoutMs = 2800) => {
+    const current = get().operation
+    const id = current?.id ?? Date.now()
+    set({
+      operation: {
+        id,
+        type: current?.type ?? 'save',
+        status,
+        title,
+        subtitle,
+      },
+    })
+    setTimeout(() => {
+      if (get().operation?.id === id) {
+        set({ operation: null })
+      }
+    }, timeoutMs)
+  },
+
+  dismissOperation: () => {
+    set({ operation: null })
+  },
 
   showToast: (message) => {
     const id = Date.now()
     set({ toast: { id, message } })
-    window.setTimeout(() => {
+    setTimeout(() => {
       if (get().toast?.id === id) set({ toast: null })
     }, 2500)
   },
@@ -320,7 +362,7 @@ export const useProject = create<State>((set, get) => ({
   },
 
   openProject: async () => {
-    const file = await openTextFile([PROJECT_EXTENSION, 'json'])
+    const file = await openTextFile([...SUPPORTED_PROJECT_EXTENSIONS, 'json'], 'OpenFolio Project (*.ofp, *.openfolio)')
     if (!file) return
     try {
       const { project, scenes } = parseProjectFile(file.text)
@@ -422,26 +464,33 @@ export const useProject = create<State>((set, get) => ({
     const { project, scenes, filePath, language } = get()
     if (!project) return
     const t = uiText(language)
+    get().startOperation('save', t.savingProgress, t.savingProgressHint)
     try {
+      await new Promise((r) => setTimeout(r, 200))
       const text = serializeProjectFile(project, scenes)
       const name = `${slug(project.title)}.${PROJECT_EXTENSION}`
       const res = await saveDocument(
         text,
         name,
-        [{ name: 'OpenFolio', extensions: [PROJECT_EXTENSION] }],
+        [{ name: 'OpenFolio Project (*.ofp, *.openfolio)', extensions: SUPPORTED_PROJECT_EXTENSIONS }],
         filePath,
         opts?.saveAs,
       )
-      if (!res) return
+      if (!res) {
+        get().dismissOperation()
+        return
+      }
       if (res.path) {
         addRecent(res.path, project.title, project.mode)
         set({ filePath: res.path, dirty: false })
       } else {
         set({ dirty: false })
       }
+      get().finishOperation('success', t.saveCompleted, t.saveCompletedHint)
       get().showToast(t.toastSaved)
     } catch (e) {
       console.error('Salvataggio non riuscito', e)
+      get().finishOperation('error', t.saveFailed, t.saveFailedHint)
       get().showToast(t.toastSaveError)
     }
   },
@@ -556,6 +605,8 @@ export const useProject = create<State>((set, get) => ({
     }
     const list = project.snapshots[id] ?? []
     set({ project: { ...project, snapshots: { ...project.snapshots, [id]: [snap, ...list].slice(0, 25) } }, dirty: true })
+    const t = uiText(lang)
+    get().finishOperation('success', t.snapshotCreated, t.snapshotCreatedHint)
   },
 
   restoreSnapshot: (id, snapId) => {
@@ -574,6 +625,9 @@ export const useProject = create<State>((set, get) => ({
       },
       dirty: true,
     }))
+    const lang = normalizeLanguage(project.settings.language ?? get().language)
+    const t = uiText(lang)
+    get().finishOperation('success', t.snapshotRestored, t.snapshotRestoredHint)
   },
 
   deleteSnapshot: (id, snapId) => {
@@ -583,6 +637,9 @@ export const useProject = create<State>((set, get) => ({
       project: { ...project, snapshots: { ...project.snapshots, [id]: (project.snapshots[id] ?? []).filter((s) => s.id !== snapId) } },
       dirty: true,
     })
+    const lang = normalizeLanguage(project.settings.language ?? get().language)
+    const t = uiText(lang)
+    get().finishOperation('success', t.snapshotDeleted, t.snapshotDeletedHint)
   },
 
   remove: (id) => {

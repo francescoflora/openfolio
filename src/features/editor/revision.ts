@@ -29,6 +29,11 @@ export function applyRevisionToSelection(schema: Schema) {
       if (dispatch) dispatch(state.tr.setStoredMarks([mark.create()]))
       return true
     }
+    const hasMark = state.doc.rangeHasMark(from, to, mark)
+    if (hasMark) {
+      if (dispatch) dispatch(state.tr.removeMark(from, to, mark))
+      return true
+    }
     if (dispatch) dispatch(state.tr.addMark(from, to, mark.create()))
     return true
   }
@@ -39,7 +44,10 @@ export function clearRevisions(schema: Schema) {
     const mark = schema.marks.revision
     if (!mark) return false
     if (dispatch) {
-      const tr = state.tr.removeMark(0, state.doc.content.size, mark)
+      const { from, to, empty } = state.selection
+      const tr = empty
+        ? state.tr.removeMark(0, state.doc.content.size, mark)
+        : state.tr.removeMark(from, to, mark)
       tr.setMeta('addToHistory', true)
       dispatch(tr)
     }

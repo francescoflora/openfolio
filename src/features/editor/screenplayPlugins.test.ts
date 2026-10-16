@@ -116,8 +116,13 @@ describe('tabKeymap', () => {
     return current
   }
 
-  it('rotates action to character on Tab', () => {
+  it('rotates action to shot on Tab', () => {
     const next = runTab(at(stateOf(blocks(['action', 'test'])), 2), 'Tab')
+    expect(next.doc.child(0).type.name).toBe('shot')
+  })
+
+  it('rotates shot to character on Tab', () => {
+    const next = runTab(at(stateOf(blocks(['shot', 'test'])), 2), 'Tab')
     expect(next.doc.child(0).type.name).toBe('character')
   })
 
@@ -137,6 +142,18 @@ describe('tabKeymap', () => {
     const next = runTab(state, 'Tab')
     expect(next.doc.child(1).type.name).toBe('parenthetical')
     expect(next.doc.child(1).textContent).toBe('')
+  })
+
+  it('rotates action to shot on Tab when directly following dialogue', () => {
+    const state = at(stateOf(blocks(['dialogue', 'Ciao.'], ['action', ''])), 8)
+    const next = runTab(state, 'Tab')
+    expect(next.doc.child(1).type.name).toBe('shot')
+  })
+
+  it('rotates shot to transition on Tab when directly following dialogue', () => {
+    const state = at(stateOf(blocks(['dialogue', 'Ciao.'], ['shot', ''])), 8)
+    const next = runTab(state, 'Tab')
+    expect(next.doc.child(1).type.name).toBe('transition')
   })
 
   it('rotates parenthetical to dialogue on Tab', () => {
@@ -161,7 +178,7 @@ describe('tabKeymap', () => {
 
   it('completes the full circular cycle without looping on dialogue/parenthetical', () => {
     let s = at(stateOf(blocks(['scene_heading', 'INT. CASA - GIORNO'])), 2)
-    const expected = ['action', 'character', 'parenthetical', 'dialogue', 'transition', 'scene_heading']
+    const expected = ['action', 'shot', 'character', 'parenthetical', 'dialogue', 'transition', 'scene_heading']
     for (const type of expected) {
       s = runTab(s, 'Tab')
       expect(s.doc.child(0).type.name).toBe(type)
@@ -170,7 +187,7 @@ describe('tabKeymap', () => {
 
   it('rotates backwards seamlessly on Shift-Tab', () => {
     let s = at(stateOf(blocks(['scene_heading', 'INT. CASA - GIORNO'])), 2)
-    const expected = ['transition', 'dialogue', 'parenthetical', 'character', 'action', 'scene_heading']
+    const expected = ['transition', 'dialogue', 'parenthetical', 'character', 'shot', 'action', 'scene_heading']
     for (const type of expected) {
       s = runTab(s, 'Shift-Tab')
       expect(s.doc.child(0).type.name).toBe(type)

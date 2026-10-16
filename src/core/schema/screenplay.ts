@@ -4,11 +4,11 @@ import { revisionMarkSpec } from './marks'
 export const SCREENPLAY_ELEMENTS = [
   'scene_heading',
   'action',
+  'shot',
   'character',
   'parenthetical',
   'dialogue',
   'transition',
-  'shot',
 ] as const
 
 export type ElementType = (typeof SCREENPLAY_ELEMENTS)[number]
@@ -54,26 +54,26 @@ export const ENTER_TARGET: Record<ElementType, ElementType> = {
   shot: 'action',
 }
 
-/** Smart contextual Tab forward map (circular: Scene Heading -> Action -> Character -> Parenthetical -> Dialogue -> Transition -> Scene Heading). */
+/** Smart contextual Tab forward map (circular: Scene Heading -> Action -> Shot -> Character -> Parenthetical -> Dialogue -> Transition -> Scene Heading). */
 export const SMART_TAB_FORWARD: Record<ElementType, ElementType> = {
   scene_heading: 'action',
-  action: 'character',
+  action: 'shot',
+  shot: 'character',
   character: 'parenthetical',
   parenthetical: 'dialogue',
   dialogue: 'transition',
   transition: 'scene_heading',
-  shot: 'action',
 }
 
 /** Smart contextual Shift-Tab backward map (exact inverse of SMART_TAB_FORWARD). */
 export const SMART_TAB_BACKWARD: Record<ElementType, ElementType> = {
-  action: 'scene_heading',
-  character: 'action',
-  parenthetical: 'character',
-  dialogue: 'parenthetical',
-  transition: 'dialogue',
   scene_heading: 'transition',
-  shot: 'transition',
+  transition: 'dialogue',
+  dialogue: 'parenthetical',
+  parenthetical: 'character',
+  character: 'shot',
+  shot: 'action',
+  action: 'scene_heading',
 }
 
 export function tabTarget(current: ElementType, dir: 1 | -1): ElementType {

@@ -5,6 +5,7 @@ import { hasCustomTitle, slug } from '@/core/stats'
 import type { BinderNode, Project } from '@/core/types'
 import type { JSONContent, SceneDoc } from '@/core/json'
 import { nativeExportFdx, nativeExportFountain, nativeExportPdf } from '@/core/native'
+import { uiText } from '@/core/i18n'
 
 export type ExportFormat = 'fountain' | 'fdx' | 'txt' | 'md' | 'docx' | 'epub' | 'pdf'
 
@@ -14,7 +15,7 @@ export const EXPORT_LABEL: Record<ExportFormat, string> = {
   txt: 'Testo semplice (.txt)',
   md: 'Markdown (.md)',
   docx: 'Word (.docx)',
-  epub: 'EPUB',
+  epub: 'EPUB (.epub)',
   pdf: 'PDF (.pdf)',
 }
 
@@ -76,76 +77,98 @@ function compileExportDocs(project: Project, scenes: Record<string, SceneDoc>): 
   return docs
 }
 
-export async function runExport(format: ExportFormat): Promise<void> {
-  const { project, scenes } = useProject.getState()
-  if (!project) return
+export async function runExport(format: ExportFormat): Promise<boolean> {
+  const { project, scenes, language } = useProject.getState()
+  if (!project) return false
+  const t = uiText(language)
+  const formatLabel = format === 'txt' ? (language === 'it' ? 'Testo' : 'Text') : EXPORT_LABEL[format]
   const base = slug(project.title)
 
-  switch (format) {
-    case 'fountain': {
-      const text = await nativeExportFountain(orderedDocs())
-      await saveExport(`${base}.fountain`, text, 'text/plain', [{ name: 'Fountain', extensions: ['fountain'] }])
-      break
-    }
-    case 'fdx': {
-      const xml = await nativeExportFdx(orderedDocs())
-      await saveExport(`${base}.fdx`, xml, 'application/xml', [
-        { name: 'Final Draft', extensions: ['fdx'] },
-      ])
-      break
-    }
-    case 'txt':
-      await saveExport(`${base}.txt`, compileText(project, scenes), 'text/plain', [{ name: 'Testo', extensions: ['txt'] }])
-      break
-    case 'md':
-      await saveExport(`${base}.md`, compileMarkdown(project, scenes), 'text/markdown', [{ name: 'Markdown', extensions: ['md'] }])
-      break
-    case 'docx': {
-      const { exportDocx } = await import('./exporters')
-      await exportDocx(project, scenes)
-      break
-    }
-    case 'epub': {
-      const { exportEpub } = await import('./exporters')
-      await exportEpub(project, scenes)
-      break
-    }
-    case 'pdf': {
-      const fontFamily =
-        project.settings.elementFonts?.paragraph ||
-        project.settings.fontFamily ||
-        (project.mode === 'screenplay' ? 'Courier Prime' : 'EB Garamond')
+  useProject.getState().startOperation('export', t.exportingProgress(formatLabel), t.exportingProgressHint)
 
-      const hasTitlePage = Boolean(
-        project.settings.titlePage?.title ||
-        project.settings.titlePage?.author ||
-        project.settings.titlePage?.contact ||
-        project.settings.author ||
-        project.author ||
-        hasCustomTitle(project.title),
-      )
+  try {
+    await new Promise((r) => setTimeout(r, 200))
+    let saved = false
 
-      const pdfBytes = await nativeExportPdf({
-        title: project.settings.titlePage?.title?.trim() || project.title.trim(),
-        mode: project.mode,
-        author: project.settings.titlePage?.author?.trim() || project.settings.author?.trim() || project.author?.trim(),
-        contact: project.settings.titlePage?.contact?.trim(),
-        language: project.settings.language,
-        font_family: fontFamily,
-        font_size_pt: project.settings.fontSizePt,
-        justify: project.settings.justify,
-        indent: project.settings.indent,
-        has_title_page: hasTitlePage,
-        page_size: 'letter',
-        scenes: compileExportDocs(project, scenes),
-      })
-      if (pdfBytes) {
-        await saveExport(`${base}.pdf`, pdfBytes, 'application/pdf', [{ name: 'Documento PDF', extensions: ['pdf'] }])
-      } else {
-        const { printProject } = await import('./print')
-        await printProject(project, scenes)
+    switch (format) {
+      case 'fountain': {
+        const text = await nativeExportFountain(orderedDocs())
+        saved = await saveExport(`${base}.fountain`, text, 'text/plain', [{ name: 'Fountain', extensions: ['fountain'] }])
+        break
       }
-      break
+      case 'fdx': {
+        const xml = await nativeExportFdx(orderedDocs())
+        saved = await saveExport(`${base}.fdx`, xml, 'application/xml', [
+          { name: 'Final Draft', extensions: ['fdx'] },
+        ])
+        break
+      }
+      case 'txt':
+        saved = await saveExport(`${base}.txt`, compileText(project, scenes), 'text/plain', [{ name: 'Testo', extensions: ['txt'] }])
+        break
+      case 'md':
+        saved = await saveExport(`${base}.md`, compileMarkdown(project, scenes), 'text/markdown', [{ name: 'Markdown', extensions: ['md'] }])
+        break
+      case 'docx': {
+        const { exportDocx } = await import('./exporters')
+        saved = await exportDocx(project, scenes)
+        break
+      }
+      case 'epub': {
+        const { exportEpub } = await import('./exporters')
+        saved = await exportEpub(project, scenes)
+        break
+      }
+      case 'pdf': {
+        const fontFamily =
+          project.settings.elementFonts?.paragraph ||
+          project.settings.fontFamily ||
+          (project.mode === 'screenplay' ? 'Courier Prime' : 'EB Garamond')
+
+        const hasTitlePage = Boolean(
+          project.settings.titlePage?.title ||
+          project.settings.titlePage?.author ||
+          project.settings.titlePage?.contact ||
+          project.settings.author ||
+          project.author ||
+          hasCustomTitle(project.title),
+        )
+
+        const pdfBytes = await nativeExportPdf({
+          title: project.settings.titlePage?.title?.trim() || project.title.trim(),
+          mode: project.mode,
+          author: project.settings.titlePage?.author?.trim() || project.settings.author?.trim() || project.author?.trim(),
+          contact: project.settings.titlePage?.contact?.trim(),
+          language: project.settings.language,
+          font_family: fontFamily,
+          font_size_pt: project.settings.fontSizePt,
+          justify: project.settings.justify,
+          indent: project.settings.indent,
+          has_title_page: hasTitlePage,
+          page_size: 'letter',
+          scenes: compileExportDocs(project, scenes),
+        })
+        if (pdfBytes) {
+          saved = await saveExport(`${base}.pdf`, pdfBytes, 'application/pdf', [{ name: 'Documento PDF', extensions: ['pdf'] }])
+        } else {
+          const { printProject } = await import('./print')
+          await printProject(project, scenes)
+          saved = true
+        }
+        break
+      }
     }
+
+    if (saved) {
+      useProject.getState().finishOperation('success', t.exportCompleted(formatLabel), t.exportCompletedHint)
+      return true
+    } else {
+      useProject.getState().dismissOperation()
+      return false
+    }
+  } catch (err) {
+    console.error('Esportazione non riuscita', err)
+    useProject.getState().finishOperation('error', t.exportFailed(formatLabel), t.exportFailedHint)
+    return false
   }
 }

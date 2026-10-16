@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Plus } from 'lucide-react'
 import { TopBar } from '@/features/topbar/TopBar'
+import { OperationNotice } from '@/features/topbar/OperationNotice'
 import { Binder } from '@/features/binder/Binder'
 import { Editor } from '@/features/editor/Editor'
 import { Corkboard } from '@/features/corkboard/Corkboard'
@@ -12,6 +13,7 @@ import { SplashScreen } from '@/features/splash/SplashScreen'
 import { useProject } from '@/store/useProject'
 import { useUpdater } from '@/store/useUpdater'
 import { hasStoredLanguage, isTauri } from '@/core/persistence'
+import { applyDefaultAppSize, applyStartWindowSize } from '@/core/windowSize'
 import { uiText } from '@/core/i18n'
 import type { Language } from '@/core/types'
 import logo from '@/assets/logo.svg'
@@ -133,33 +135,39 @@ export default function App() {
     }
   }, [projectTitle])
 
+  const prevHasProjectRef = useRef<boolean | null>(null)
+
   const handleSplashFinish = useCallback(async () => {
     setShowSplash(false)
     if (isTauri()) {
       try {
-        const { getCurrentWindow } = await import('@tauri-apps/api/window')
-        const { LogicalSize } = await import('@tauri-apps/api/dpi')
-        const win = getCurrentWindow()
-
-        // Ripristina decorazioni native (barra del titolo di Windows) e mostra in taskbar
-        await win.setDecorations(true)
-        await win.setSkipTaskbar(false)
-        await win.setFullscreen(false)
-
-        // Calcola dimensioni ottimali senza sforare lo schermo
-        const availW = window.screen.availWidth || 1280
-        const availH = window.screen.availHeight || 800
-        const targetW = Math.min(1360, Math.max(960, Math.round(availW * 0.88)))
-        const targetH = Math.min(860, Math.max(620, Math.round(availH * 0.90)))
-
-        await win.setMinSize(new LogicalSize(760, 500))
-        await win.setSize(new LogicalSize(targetW, targetH))
-        await win.center()
+        const currentHasProject = useProject.getState().project !== null
+        prevHasProjectRef.current = currentHasProject
+        if (currentHasProject) {
+          await applyDefaultAppSize()
+        }
       } catch (err) {
         console.warn('Splash transition error', err)
       }
     }
   }, [])
+
+  useEffect(() => {
+    if (showSplash) return
+
+    if (prevHasProjectRef.current === null) {
+      prevHasProjectRef.current = hasProject
+      return
+    }
+
+    if (!prevHasProjectRef.current && hasProject) {
+      prevHasProjectRef.current = true
+      void applyDefaultAppSize()
+    } else if (prevHasProjectRef.current && !hasProject) {
+      prevHasProjectRef.current = false
+      void applyStartWindowSize()
+    }
+  }, [hasProject, showSplash])
 
   return (
     <>
@@ -187,6 +195,7 @@ export default function App() {
           </>
         )}
       </div>
+      <OperationNotice />
     </>
   )
 }

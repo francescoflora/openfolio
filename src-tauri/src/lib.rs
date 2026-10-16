@@ -73,7 +73,7 @@ pub fn run() {
                 .skip(1)
                 .find(|a| {
                     let lower = a.to_ascii_lowercase();
-                    lower.ends_with(".openfolio")
+                    lower.ends_with(".ofp") || lower.ends_with(".openfolio")
                 });
             app.manage(Mutex::new(launch_file));
 
