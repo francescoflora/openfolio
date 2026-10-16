@@ -19,7 +19,7 @@
         "minHeight": 400,
         "center": true,
         "decorations": false,
-        "skipTaskbar": true,
+        "skipTaskbar": false,
         "resizable": true,
         "fullscreen": false,
         "dragDropEnabled": false

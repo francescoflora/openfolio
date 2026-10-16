@@ -275,7 +275,7 @@ export function Editor({ sceneId, mode }: { sceneId: string; mode: ProjectMode }
     <div className="relative flex min-h-0 min-w-0 flex-1 flex-col bg-canvas">
       <div className="relative flex h-9 shrink-0 items-center justify-between border-b border-border bg-surface px-3 text-xs">
         {/* Left: Binder Toggle & Element Selector / Block switch */}
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="z-10 flex items-center gap-1.5 shrink-0">
           <button
             className={cn(
               'flex h-7 w-7 items-center justify-center rounded-md border transition cursor-pointer select-none',
@@ -335,126 +335,128 @@ export function Editor({ sceneId, mode }: { sceneId: string; mode: ProjectMode }
           )}
         </div>
 
-        {/* Center: Formatting, Undo/Redo & Revision Icons */}
-        <div className="flex flex-1 items-center justify-center gap-1 min-w-0 px-2">
-          {mode === 'novel' && (
-            <>
-              {/* Giustificato */}
-              <button
-                className={cn(
-                  'flex h-7 w-7 items-center justify-center rounded-md border transition cursor-pointer',
-                  justify
-                    ? 'border-accent/40 bg-accent/15 text-accent shadow-xs'
-                    : 'border-transparent text-ink-muted hover:bg-surface-2 hover:text-ink',
-                )}
-                onClick={() => updateSettings({ justify: !justify })}
-                title={t.justifyTitle(justify)}
-                aria-label={t.justifyTitle(justify)}
-              >
-                <AlignJustify className="h-4 w-4" />
-              </button>
+        {/* Center: Formatting, Undo/Redo & Revision Icons (perfettamente centrato a 50%) */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 flex h-full items-center justify-center">
+          <div className="pointer-events-auto flex items-center justify-center gap-1">
+            {mode === 'novel' && (
+              <>
+                {/* Giustificato */}
+                <button
+                  className={cn(
+                    'flex h-7 w-7 items-center justify-center rounded-md border transition cursor-pointer',
+                    justify
+                      ? 'border-accent/40 bg-accent/15 text-accent shadow-xs'
+                      : 'border-transparent text-ink-muted hover:bg-surface-2 hover:text-ink',
+                  )}
+                  onClick={() => updateSettings({ justify: !justify })}
+                  title={t.justifyTitle(justify)}
+                  aria-label={t.justifyTitle(justify)}
+                >
+                  <AlignJustify className="h-4 w-4" />
+                </button>
 
-              {/* Indentazione */}
-              <button
-                className={cn(
-                  'flex h-7 w-7 items-center justify-center rounded-md border transition cursor-pointer',
-                  indent
-                    ? 'border-accent/40 bg-accent/15 text-accent shadow-xs'
-                    : 'border-transparent text-ink-muted hover:bg-surface-2 hover:text-ink',
-                )}
-                onClick={() => updateSettings({ indent: !indent })}
-                title={t.indentTitle(indent)}
-                aria-label={t.indentTitle(indent)}
-              >
-                <Indent className="h-4 w-4" />
-              </button>
+                {/* Indentazione */}
+                <button
+                  className={cn(
+                    'flex h-7 w-7 items-center justify-center rounded-md border transition cursor-pointer',
+                    indent
+                      ? 'border-accent/40 bg-accent/15 text-accent shadow-xs'
+                      : 'border-transparent text-ink-muted hover:bg-surface-2 hover:text-ink',
+                  )}
+                  onClick={() => updateSettings({ indent: !indent })}
+                  title={t.indentTitle(indent)}
+                  aria-label={t.indentTitle(indent)}
+                >
+                  <Indent className="h-4 w-4" />
+                </button>
 
-              <div className="mx-1 h-3.5 w-px bg-border" />
-            </>
-          )}
-
-          {/* Annulla (Undo) */}
-          <button
-            type="button"
-            disabled={!historyState.undo}
-            onClick={() => runCommand(undo)}
-            className="flex h-7 w-7 items-center justify-center rounded-md border border-transparent text-ink-muted transition hover:bg-surface-2 hover:text-ink cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
-            title={t.undoTitle}
-            aria-label={t.undoTitle}
-          >
-            <Undo2 className="h-4 w-4" />
-          </button>
-
-          {/* Ripeti (Redo) */}
-          <button
-            type="button"
-            disabled={!historyState.redo}
-            onClick={() => runCommand(redo)}
-            className="flex h-7 w-7 items-center justify-center rounded-md border border-transparent text-ink-muted transition hover:bg-surface-2 hover:text-ink cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
-            title={t.redoTitle}
-            aria-label={t.redoTitle}
-          >
-            <Redo2 className="h-4 w-4" />
-          </button>
-
-          {/* Tipografia elementi / Font (Tt) */}
-          <button
-            className={cn(
-              'flex h-7 w-7 items-center justify-center rounded-md border transition cursor-pointer select-none',
-              fontModalOpen
-                ? 'border-accent/50 bg-accent/15 text-accent shadow-xs'
-                : 'border-transparent text-ink-muted hover:bg-surface-2 hover:text-ink',
+                <div className="mx-1 h-3.5 w-px bg-border" />
+              </>
             )}
-            onClick={() => setFontModalOpen(true)}
-            title={t.fontModalBtnTitle}
-            aria-label={t.fontModalBtnTitle}
-          >
-            <Type className="h-4 w-4" />
-          </button>
 
-          <div className="mx-1 h-3.5 w-px bg-border" />
+            {/* Annulla (Undo) */}
+            <button
+              type="button"
+              disabled={!historyState.undo}
+              onClick={() => runCommand(undo)}
+              className="flex h-7 w-7 items-center justify-center rounded-md border border-transparent text-ink-muted transition hover:bg-surface-2 hover:text-ink cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+              title={t.undoTitle}
+              aria-label={t.undoTitle}
+            >
+              <Undo2 className="h-4 w-4" />
+            </button>
 
-          {/* Modalità Revisione */}
-          <button
-            className={cn(
-              'relative flex h-7 w-7 items-center justify-center rounded-md border transition cursor-pointer',
-              revisionActive
-                ? 'border-amber-500/50 bg-amber-500/15 text-amber-600 dark:text-amber-400 shadow-xs'
-                : 'border-transparent text-ink-muted hover:bg-surface-2 hover:text-ink',
-            )}
-            onClick={toggleRevision}
-            title={t.revisionTitle(revisionActive)}
-            aria-label={t.revisionTitle(revisionActive)}
-          >
-            <History className="h-4 w-4" />
-            {revisionActive && (
-              <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-amber-500 ring-2 ring-surface animate-pulse" />
-            )}
-          </button>
+            {/* Ripeti (Redo) */}
+            <button
+              type="button"
+              disabled={!historyState.redo}
+              onClick={() => runCommand(redo)}
+              className="flex h-7 w-7 items-center justify-center rounded-md border border-transparent text-ink-muted transition hover:bg-surface-2 hover:text-ink cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+              title={t.redoTitle}
+              aria-label={t.redoTitle}
+            >
+              <Redo2 className="h-4 w-4" />
+            </button>
 
-          {/* Segna selezione */}
-          <button
-            className="flex h-7 w-7 items-center justify-center rounded-md border border-transparent text-ink-muted transition hover:bg-surface-2 hover:text-ink cursor-pointer"
-            onClick={() => runCommand(applyRevisionToSelection(schema))}
-            title={t.markRevisionTitle}
-            aria-label={t.markRevisionTitle}
-          >
-            <Highlighter className="h-4 w-4" />
-          </button>
+            {/* Tipografia elementi / Font (Tt) */}
+            <button
+              className={cn(
+                'flex h-7 w-7 items-center justify-center rounded-md border transition cursor-pointer select-none',
+                fontModalOpen
+                  ? 'border-accent/50 bg-accent/15 text-accent shadow-xs'
+                  : 'border-transparent text-ink-muted hover:bg-surface-2 hover:text-ink',
+              )}
+              onClick={() => setFontModalOpen(true)}
+              title={t.fontModalBtnTitle}
+              aria-label={t.fontModalBtnTitle}
+            >
+              <Type className="h-4 w-4" />
+            </button>
 
-          {/* Accetta tutte le revisioni */}
-          <button
-            className="flex h-7 w-7 items-center justify-center rounded-md border border-transparent text-ink-muted transition hover:bg-surface-2 hover:text-ink cursor-pointer"
-            onClick={() => runCommand(clearRevisions(schema))}
-            title={t.clearRevisionsTitle}
-            aria-label={t.clearRevisionsTitle}
-          >
-            <CheckCheck className="h-4 w-4" />
-          </button>
+            <div className="mx-1 h-3.5 w-px bg-border" />
+
+            {/* Modalità Revisione */}
+            <button
+              className={cn(
+                'relative flex h-7 w-7 items-center justify-center rounded-md border transition cursor-pointer',
+                revisionActive
+                  ? 'border-amber-500/50 bg-amber-500/15 text-amber-600 dark:text-amber-400 shadow-xs'
+                  : 'border-transparent text-ink-muted hover:bg-surface-2 hover:text-ink',
+              )}
+              onClick={toggleRevision}
+              title={t.revisionTitle(revisionActive)}
+              aria-label={t.revisionTitle(revisionActive)}
+            >
+              <History className="h-4 w-4" />
+              {revisionActive && (
+                <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-amber-500 ring-2 ring-surface animate-pulse" />
+              )}
+            </button>
+
+            {/* Segna selezione */}
+            <button
+              className="flex h-7 w-7 items-center justify-center rounded-md border border-transparent text-ink-muted transition hover:bg-surface-2 hover:text-ink cursor-pointer"
+              onClick={() => runCommand(applyRevisionToSelection(schema))}
+              title={t.markRevisionTitle}
+              aria-label={t.markRevisionTitle}
+            >
+              <Highlighter className="h-4 w-4" />
+            </button>
+
+            {/* Accetta tutte le revisioni */}
+            <button
+              className="flex h-7 w-7 items-center justify-center rounded-md border border-transparent text-ink-muted transition hover:bg-surface-2 hover:text-ink cursor-pointer"
+              onClick={() => runCommand(clearRevisions(schema))}
+              title={t.clearRevisionsTitle}
+              aria-label={t.clearRevisionsTitle}
+            >
+              <CheckCheck className="h-4 w-4" />
+            </button>
+          </div>
         </div>
 
         {/* Right: Notes Sidebar Toggle */}
-        <div className="flex items-center shrink-0">
+        <div className="z-10 flex items-center shrink-0">
           <button
             className={cn(
               'flex h-7 w-7 items-center justify-center rounded-md border transition cursor-pointer select-none',

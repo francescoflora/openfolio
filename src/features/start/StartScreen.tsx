@@ -1,11 +1,15 @@
 import { useState } from 'react'
-import { BookOpen, ChevronUp, Clapperboard, Clock, FileUp, FolderOpen, Moon, Sun, Trash2 } from 'lucide-react'
+import { BookOpen, ChevronUp, Clapperboard, Clock, FileUp, FolderOpen, Info, Moon, Sun, Trash2 } from 'lucide-react'
 import { useProject } from '@/store/useProject'
 import { TEMPLATES, templateOpts } from '@/core/templates'
 import { listRecent, removeRecent, isTauri } from '@/core/persistence'
 import type { RecentProject } from '@/core/persistence'
 import { uiText } from '@/core/i18n'
 import { LanguageMenu } from '@/features/topbar/LanguageMenu'
+import { UpdateMenu } from '@/features/topbar/UpdateMenu'
+import { AboutModal } from '@/features/topbar/AboutModal'
+import { WindowControls } from '@/features/topbar/WindowControls'
+import { toggleWindowMaximize } from '@/core/windowSize'
 import { cn } from '@/lib/cn'
 import logo from '@/assets/logo.svg'
 
@@ -19,6 +23,7 @@ export function StartScreen() {
   const lang = useProject((s) => s.language)
   const [recents, setRecents] = useState<RecentProject[]>(() => (isTauri() ? listRecent() : []))
   const [importOpen, setImportOpen] = useState(false)
+  const [aboutOpen, setAboutOpen] = useState(false)
   const t = uiText(lang)
 
   const drop = (path: string) => {
@@ -26,22 +31,56 @@ export function StartScreen() {
     setRecents(listRecent())
   }
 
+  const handleTitleBarDoubleClick = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('button, select, input, a, [data-interactive]')) {
+      return
+    }
+    void toggleWindowMaximize()
+  }
+
   return (
-    <div className="relative flex h-full min-w-0 flex-1 items-center justify-center overflow-auto bg-canvas p-6">
-      <div className="absolute right-4 top-4 flex items-center gap-1">
-        <LanguageMenu />
-        <button
-          className="rounded-md p-1.5 text-ink-soft hover:bg-surface-2"
-          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-          title={t.themeBtn}
-        >
-          {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-        </button>
+    <div className="flex h-full min-w-0 flex-1 flex-col overflow-hidden bg-canvas">
+      {/* Title Bar Integrata */}
+      <div
+        className="flex h-10 w-full shrink-0 items-center justify-between border-b border-border bg-surface pl-3 pr-0 select-none"
+        data-tauri-drag-region
+        onDoubleClick={handleTitleBarDoubleClick}
+      >
+        <div className="flex items-center gap-2 pointer-events-none" data-tauri-drag-region>
+          <img src={logo} alt="" className="h-4.5 w-4.5 drop-shadow-sm" />
+          <span className="font-brand text-xs font-bold tracking-tight text-ink">
+            Open<span className="text-amber-500">Folio</span>
+          </span>
+        </div>
+
+        <div className="flex flex-1 h-full" data-tauri-drag-region />
+
+        <div className="flex h-full items-center gap-1 sm:gap-1.5" data-tauri-drag-region="false">
+          <button
+            className="rounded-md p-1.5 text-ink-soft hover:bg-surface-2 transition-colors cursor-pointer"
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            title={t.themeBtn}
+          >
+            {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </button>
+          <LanguageMenu />
+          <UpdateMenu />
+          <button
+            className="rounded-md p-1.5 text-ink-soft hover:bg-surface-2 transition-colors cursor-pointer"
+            onClick={() => setAboutOpen(true)}
+            title={t.aboutBtn}
+          >
+            <Info className="h-4 w-4" />
+          </button>
+          <WindowControls />
+        </div>
       </div>
 
-      <div className="w-full max-w-xl rounded-2xl border border-border bg-surface p-5 sm:p-6 shadow-sm">
-        <div className="mb-5 flex items-center gap-3">
-          <img src={logo} alt="OpenFolio" className="h-11 w-11 drop-shadow-sm" />
+      {/* Contenuto principale StartScreen */}
+      <div className="flex flex-1 min-h-0 w-full items-center justify-center overflow-x-hidden overflow-y-auto p-3 sm:p-4">
+        <div className="w-full max-w-[570px] rounded-2xl border border-border bg-surface p-4 sm:p-5 shadow-sm">
+        <div className="mb-4 flex items-center gap-3">
+          <img src={logo} alt="OpenFolio" className="h-10 w-10 drop-shadow-sm" />
           <div>
             <h1 className="font-brand text-2xl font-bold tracking-tight text-ink">
               Open<span className="text-amber-500">Folio</span>
@@ -50,7 +89,7 @@ export function StartScreen() {
           </div>
         </div>
 
-        <div className="mb-5 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+        <div className="mb-4 grid grid-cols-2 gap-2.5">
           {TEMPLATES.map((tpl) => {
             const Icon = tpl.icon
             const name = tpl.mode === 'screenplay' ? t.templateScreenplayName : t.templateNovelName
@@ -58,7 +97,7 @@ export function StartScreen() {
             return (
               <button
                 key={tpl.id}
-                className="group flex items-start gap-3 rounded-xl border border-border p-3.5 text-left transition-all hover:border-accent hover:bg-surface-2 hover:shadow-sm"
+                className="group flex items-start gap-3 rounded-xl border border-border p-3 text-left transition-all hover:border-accent hover:bg-surface-2 hover:shadow-sm cursor-pointer"
                 onClick={() => newProject(tpl.mode, undefined, templateOpts(tpl))}
               >
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-surface-2 text-accent transition-colors group-hover:border-accent/40 group-hover:bg-accent/10">
@@ -151,14 +190,14 @@ export function StartScreen() {
         </div>
 
         {isTauri() && recents.length > 0 && (
-          <div className="mt-5 border-t border-border pt-3.5">
-            <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+          <div className="mt-3.5 border-t border-border pt-2.5">
+            <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
               <Clock className="h-3.5 w-3.5" /> {t.recentsHeader}
             </div>
-            <ul className="flex max-h-32 flex-col gap-1 overflow-y-auto pr-1">
+            <ul className="flex max-h-24 flex-col gap-1 overflow-y-auto pr-1">
               {recents.map((r) => (
                 <li key={r.path} className="group flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-surface-2">
-                  <button className="flex min-w-0 flex-1 items-center gap-2 text-left" onClick={() => void openRecentProject(r.path)}>
+                  <button className="flex min-w-0 flex-1 items-center gap-2 text-left cursor-pointer" onClick={() => void openRecentProject(r.path)}>
                     {r.mode === 'screenplay' ? (
                       <Clapperboard className="h-3.5 w-3.5 shrink-0 text-ink-faint" />
                     ) : (
@@ -168,7 +207,7 @@ export function StartScreen() {
                     <span className="truncate text-xs text-ink-faint">{r.path}</span>
                   </button>
                   <button
-                    className="shrink-0 rounded p-1 text-ink-faint opacity-0 hover:bg-surface group-hover:opacity-100"
+                    className="shrink-0 rounded p-1 text-ink-faint opacity-0 hover:bg-surface group-hover:opacity-100 cursor-pointer"
                     title={t.removeRecentTitle}
                     onClick={() => drop(r.path)}
                   >
@@ -179,7 +218,10 @@ export function StartScreen() {
             </ul>
           </div>
         )}
+        </div>
       </div>
+
+      {aboutOpen && <AboutModal onClose={() => setAboutOpen(false)} />}
     </div>
   )
 }
