@@ -154,7 +154,7 @@ function proseParagraph(
   })
 }
 
-export async function exportDocx(project: Project, scenes: Record<string, SceneDoc>): Promise<void> {
+export async function exportDocx(project: Project, scenes: Record<string, SceneDoc>): Promise<boolean> {
   const docx = await import('docx')
   const units = compileUnits(project, scenes)
   const tp = project.settings.titlePage
@@ -324,7 +324,7 @@ export async function exportDocx(project: Project, scenes: Record<string, SceneD
   })
   const blob = await docx.Packer.toBlob(doc)
   const bytes = new Uint8Array(await blob.arrayBuffer())
-  await saveExport(`${slug(project.title)}.docx`, bytes, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', [
+  return await saveExport(`${slug(project.title)}.docx`, bytes, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', [
     { name: 'Word', extensions: ['docx'] },
   ])
 }
@@ -357,7 +357,7 @@ function sceneXhtml(doc: SceneDoc, mode: Project['mode']): string {
   return doc.content.map((n) => `<p class="el-${n.type}">${inlineXhtml(n) || '&nbsp;'}</p>`).join('\n')
 }
 
-export async function exportEpub(project: Project, scenes: Record<string, SceneDoc>): Promise<void> {
+export async function exportEpub(project: Project, scenes: Record<string, SceneDoc>): Promise<boolean> {
   const { default: JSZip } = await import('jszip')
   const units = compileUnits(project, scenes)
   const chapters: { title: string; body: string }[] = []
@@ -484,5 +484,5 @@ ${hasTitlePage ? '<item id="titlepage" href="title.xhtml" media-type="applicatio
   chapters.forEach((c, i) => zip.file(`OEBPS/c${i}.xhtml`, xhtml(c.title, c.body)))
 
   const bytes = await zip.generateAsync({ type: 'uint8array', mimeType: 'application/epub+zip' })
-  await saveExport(`${slug(project.title)}.epub`, bytes, 'application/epub+zip', [{ name: 'EPUB', extensions: ['epub'] }])
+  return await saveExport(`${slug(project.title)}.epub`, bytes, 'application/epub+zip', [{ name: 'EPUB', extensions: ['epub'] }])
 }

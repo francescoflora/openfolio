@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Plus } from 'lucide-react'
 import { TopBar } from '@/features/topbar/TopBar'
+import { OperationNotice } from '@/features/topbar/OperationNotice'
 import { Binder } from '@/features/binder/Binder'
 import { Editor } from '@/features/editor/Editor'
 import { Corkboard } from '@/features/corkboard/Corkboard'
@@ -194,6 +195,7 @@ export default function App() {
           </>
         )}
       </div>
+      <OperationNotice />
     </>
   )
 }

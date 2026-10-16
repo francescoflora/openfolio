@@ -38,7 +38,7 @@ It combines the strict typographic discipline of the industry-standard Hollywood
 - **Dark & Light Modes**: Clean, high-contrast interface designed for comfortable extended writing sessions.
 
 ### 📤 Interoperability & File Formats
-- **Open Native Format**: Save directly to transparent `.openfolio` project files.
+- **Open Native Format**: Save directly to transparent `.ofp` (*OpenFolio Project*) files by default, with seamless backward compatibility for existing `.openfolio` project files.
 - **Import**:
   - Final Draft (`.fdx`)
   - Fountain (`.fountain`)

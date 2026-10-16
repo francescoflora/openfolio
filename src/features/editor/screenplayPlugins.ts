@@ -320,16 +320,16 @@ export function tabKeymap(schema: Schema) {
       }
 
       // 2. Line directly preceded by dialogue (after dialogue):
-      // Allows rotating through character -> parenthetical (perifrasi) -> dialogue -> action -> transition -> scene_heading
+      // Allows rotating through character -> parenthetical (perifrasi) -> dialogue -> action -> shot -> transition -> scene_heading
       if (prev === 'dialogue') {
         const afterDialogueForward: Record<ElementType, ElementType> = {
           character: 'parenthetical',
           parenthetical: 'dialogue',
           dialogue: 'action',
-          action: 'transition',
+          action: 'shot',
+          shot: 'transition',
           transition: 'scene_heading',
           scene_heading: 'character',
-          shot: 'action',
         }
         const target = afterDialogueForward[type] ?? 'parenthetical'
         return makeSetType(schema, target)(state, dispatch)
@@ -359,11 +359,11 @@ export function tabKeymap(schema: Schema) {
         const afterDialogueBackward: Record<ElementType, ElementType> = {
           character: 'scene_heading',
           scene_heading: 'transition',
-          transition: 'action',
+          transition: 'shot',
+          shot: 'action',
           action: 'dialogue',
           dialogue: 'parenthetical',
           parenthetical: 'character',
-          shot: 'action',
         }
         const target = afterDialogueBackward[type] ?? 'character'
         return makeSetType(schema, target)(state, dispatch)

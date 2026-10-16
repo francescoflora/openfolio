@@ -22,7 +22,6 @@ export function TopBar() {
   const lang = useProject((s) => s.language)
   const dirty = useProject((s) => s.dirty)
   const theme = useProject((s) => s.theme)
-  const toast = useProject((s) => s.toast)
   const newProject = useProject((s) => s.newProject)
   const openProject = useProject((s) => s.openProject)
   const importProject = useProject((s) => s.importProject)
@@ -258,13 +257,6 @@ export function TopBar() {
                 ))}
               </div>
             </>
-          )}
-
-          {toast && (
-            <div className="absolute left-0 top-10 z-30 flex items-center gap-2 whitespace-nowrap rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-ink shadow-lg">
-              <Check className="h-3.5 w-3.5 text-green-600" />
-              {toast.message}
-            </div>
           )}
         </div>
       </div>

@@ -39,9 +39,9 @@
     "copyright": "GPL-3.0-or-later",
     "fileAssociations": [
       {
-        "ext": ["openfolio"],
-        "name": "OpenFolio Document",
-        "description": "Documento di Scrittura OpenFolio",
+        "ext": ["ofp", "openfolio"],
+        "name": "OpenFolio Project",
+        "description": "Progetto OpenFolio (OpenFolio Project)",
         "role": "Editor",
         "mimeType": "application/x-openfolio"
       }

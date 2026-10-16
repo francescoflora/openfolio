@@ -9,7 +9,12 @@ export interface ProjectFile {
 }
 
 export const PROJECT_FILE_VERSION = 1
-export const PROJECT_EXTENSION = 'openfolio'
+/** Estensione predefinita per i file di progetto OpenFolio (OpenFolio Project) */
+export const PROJECT_EXTENSION = 'ofp'
+/** Estensione legacy per garantire la retrocompatibilità con i progetti salvati in precedenza */
+export const LEGACY_PROJECT_EXTENSION = 'openfolio'
+/** Tutte le estensioni di progetto supportate dall'applicazione */
+export const SUPPORTED_PROJECT_EXTENSIONS = [PROJECT_EXTENSION, LEGACY_PROJECT_EXTENSION]
 
 /** Serialize the whole project (binder + scenes + settings) into one file. */
 export function serializeProjectFile(project: Project, scenes: Record<string, SceneDoc>): string {
