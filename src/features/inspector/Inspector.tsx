@@ -9,12 +9,13 @@ const field = 'w-full rounded-md border border-border bg-surface-2 px-2 py-1 tex
 
 function ProjectPanel() {
   const project = useProject((s) => s.project)
+  const appLanguage = useProject((st) => st.language)
   const setProjectTitle = useProject((s) => s.setProjectTitle)
   const updateSettings = useProject((s) => s.updateSettings)
   if (!project) return null
   const s = project.settings
   const tp = s.titlePage ?? {}
-  const t = uiText(s.language)
+  const t = uiText(appLanguage)
 
   return (
     <aside className="flex w-72 shrink-0 flex-col gap-3 overflow-auto border-l border-border bg-surface p-3 text-sm">
@@ -52,6 +53,7 @@ function ProjectPanel() {
 export function Inspector() {
   const project = useProject((s) => s.project)
   const selectedId = useProject((s) => s.selectedId)
+  const appLanguage = useProject((s) => s.language)
   const rename = useProject((s) => s.rename)
   const updateMeta = useProject((s) => s.updateMeta)
   const addSnapshot = useProject((s) => s.addSnapshot)
@@ -63,9 +65,8 @@ export function Inspector() {
     return <ProjectPanel />
   }
 
-  const lang = project?.settings.language
-  const statusLabel = statusLabels(lang)
-  const t = uiText(lang)
+  const statusLabel = statusLabels(appLanguage)
+  const t = uiText(appLanguage)
   const meta = node.metadata
   const snaps = project?.snapshots[node.id] ?? []
 

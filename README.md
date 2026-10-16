@@ -1,6 +1,6 @@
 # 📖 OpenFolio
 
-> **L'ambiente di scrittura open source, minimale e focalizzato per sceneggiatori e narratori.**
+> **The minimal, focused, open-source writing environment for screenwriters and authors.**
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-amber.svg)](LICENSE)
 [![Tauri 2](https://img.shields.io/badge/Desktop-Tauri%202.x-24c8db.svg)](https://tauri.app/)
@@ -9,81 +9,83 @@
 
 ---
 
-## ✨ Cos'è OpenFolio?
+## ✨ What is OpenFolio?
 
-**OpenFolio** è un software desktop open source progettato per chi scrive storie complesse — che si tratti di un lungometraggio cinematografico, una serie TV, un romanzo o un racconto.
+**OpenFolio** is an open-source desktop application crafted for writers working on complex narratives — whether feature films, TV pilots, novels, or short stories.
 
-Unisce la disciplina tipografica del formato sceneggiatura standard di Hollywood alla flessibilità strutturale necessaria per la stesura di romanzi e saggi, eliminando le distrazioni e mettendo sempre al centro il testo.
+It combines the strict typographic discipline of the industry-standard Hollywood screenplay format with the structural flexibility needed for long-form prose and non-fiction, stripping away clutter to keep your words front and center.
 
 ---
 
-## 🚀 Caratteristiche principali
+## 🚀 Key Features
 
-### 🎬 Modalità Sceneggiatura (Screenplay)
-- **Formattazione standard industriale**: Intestazioni scena (`INT./EXT.`), Personaggi, Battute, Transizioni, Inserti e Parentetiche conformi alle convenzioni cinematografiche.
-- **Parentetiche automatiche intelligenti**: inserimento guidato senza interruzioni di flusso e transizione fluida alla battuta.
-- **Navigazione rapida**: tabulazione e tasto invio ottimizzati per scrivere senza staccare le mani dalla tastiera.
+### 🎬 Screenplay Mode
+- **Industry-Standard Formatting**: Scene Headings (`INT./EXT.`), Characters, Dialogue, Transitions, Shots, and Parentheticals conforming to traditional film conventions.
+- **Smart Auto-Parentheticals**: Seamless inline guidance without interrupting writing momentum, transitioning naturally straight into dialogue.
+- **Keyboard-First Workflow**: Optimized `Tab` and `Enter` navigation designed to keep your hands on the keyboard.
 
-### 📚 Modalità Romanzo (Novel)
-- **Impaginazione editoriale**: supporto per capitoli, sezioni numerate, rientri prima riga e testo giustificato.
-- **Calcolo cartelle editoriali**: conteggio in tempo reale di parole, battute con e senza spazi, e cartelle editoriali standard (1.800 battute).
+### 📚 Novel Mode
+- **Editorial Layout**: Support for chapters, numbered sections, first-line indentations, and justified text.
+- **Real-Time Word & Manuscript Metrics**: Live counts for words, characters (with and without spaces), and standard editorial pages (1,800 characters per page).
 
-### 🗂️ Struttura & Organizzazione (The Binder)
-- **Raccoglitore gerarchico**: organizza liberamente atti, capitoli, sezioni e scene con drag-and-drop.
-- **Corkboard (Bacheca)**: visualizza le scene come schede di sinossi con codici colore e stati di avanzamento (Bozza, In revisione, Finale).
-- **Outline (Scaletta)**: visione panoramica a elenco con statistiche dettagliate per capitolo e scena.
+### 🗂️ Structure & Organization (The Binder)
+- **Hierarchical Binder**: Freely structure acts, chapters, sections, and scenes with drag-and-drop reordering.
+- **Corkboard**: Visualize scenes as synopsis index cards with custom color codes and workflow statuses (*Draft*, *In Review*, *Final*).
+- **Outline View**: High-level tabular overview with per-chapter and per-scene statistics.
 
-### 🎨 Design & Tipografia
-- **Tipografia per elemento**: personalizza i caratteri per ciascuna tipologia di testo (Courier Prime, EB Garamond, Inter, Lora, ecc.) mantenendo impostazioni indipendenti per progetto e software.
-- **Tema Scuro & Chiaro**: interfaccia satinata ad alto contrasto per sessioni di scrittura notturne prolungate.
+### 🎨 Design & Typography
+- **Per-Element Typography**: Customize typefaces for every text type (Courier Prime, EB Garamond, Inter, Lora, etc.) with independent project-level and application defaults.
+- **Dark & Light Modes**: Clean, high-contrast interface designed for comfortable extended writing sessions.
 
-### 📤 Interoperabilità e Formati di File
-- **Nuovo formato nativo**: salvataggio in formato aperto `.openfolio` (con retrocompatibilità per i file `.scriptforge`).
-- **Importazione**:
+### 📤 Interoperability & File Formats
+- **Open Native Format**: Save directly to transparent `.openfolio` project files.
+- **Import**:
   - Final Draft (`.fdx`)
   - Fountain (`.fountain`)
-  - File di testo semplice (`.txt`)
-- **Esportazione ad alta fedeltà**:
-  - **PDF**: rendering nativo ultra-veloce con copertina, numerazione pagine e sezioni centrate.
-  - **Word (`.docx`)**: esportazione pulita con stili coerenti per revisione ed editing editoriale.
-  - **Final Draft (`.fdx`)** e **Fountain (`.fountain`)**
-  - **EPUB**, **Markdown (`.md`)** e **Testo (`.txt`)**
+  - Plain text (`.txt`)
+- **High-Fidelity Export**:
+  - **PDF**: Fast native rendering with cover page, page numbers, and custom margins.
+  - **Word (`.docx`)**: Clean export with structured styles for editorial review and markups.
+  - **Final Draft (`.fdx`)** and **Fountain (`.fountain`)**
+  - **EPUB**, **Markdown (`.md`)**, and **Plain Text (`.txt`)**
 
 ---
 
-## 🛠️ Stack Tecnologico
+## 🛠️ Tech Stack
 
-- **Core Desktop**: [Tauri 2](https://tauri.app/) (Rust) — consumo di risorse minimo, sicurezza e avvio istantaneo.
-- **Interfaccia Utente**: [React 19](https://react.dev/), [TypeScript](https://www.typescriptlang.org/) e [Tailwind CSS](https://tailwindcss.com/).
-- **Editor Rich Text**: [ProseMirror](https://prosemirror.net/) con schema ed estensioni dedicate per sceneggiatura e narrativa.
-- **Generazione Documenti**: Parser nativi Rust per PDF (`printpdf`), FDX (`quick-xml`) e Fountain.
+- **Desktop Core**: [Tauri 2](https://tauri.app/) (Rust) — minimal resource consumption, enhanced security, and instant launch times.
+- **User Interface**: [React 19](https://react.dev/), [TypeScript](https://www.typescriptlang.org/), and [Tailwind CSS](https://tailwindcss.com/).
+- **Rich Text Editor**: [ProseMirror](https://prosemirror.net/) with specialized schemas and input rules for screenplay and narrative writing.
+- **Document Processing**: Native Rust engines for PDF rendering, FDX parsing, and Fountain conversion.
 
 ---
 
-## 💻 Installazione & Sviluppo Locale
+## 💻 Installation & Local Development
 
-Prerequisiti: [Node.js](https://nodejs.org/) (>= 18) e toolchain [Rust](https://rustup.rs/).
+### Prerequisites
+- [Node.js](https://nodejs.org/) (>= 18)
+- [Rust toolchain](https://rustup.rs/)
 
 ```bash
-# Clona il repository
+# Clone the repository
 git clone https://github.com/francescoflora/openfolio.git
 cd openfolio
 
-# Installa le dipendenze
+# Install dependencies
 npm install
 
-# Avvia in modalità sviluppo con hot-reload
+# Run in development mode (browser / Vite)
 npm run dev
 
-# Avvia l'app desktop completa con Tauri
+# Run desktop application in development mode (Tauri)
 npm run tauri dev
 
-# Compila l'eseguibile di produzione
+# Build production desktop application
 npm run tauri build
 ```
 
 ---
 
-## 📄 Licenza
+## 📄 License
 
-Distribuito sotto licenza **GPL-3.0-or-later**. Consulta il file `LICENSE` per ulteriori dettagli.
+Distributed under the **GPL-3.0-or-later** license. See [LICENSE](LICENSE) for more details.

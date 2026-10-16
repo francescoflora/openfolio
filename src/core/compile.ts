@@ -166,11 +166,22 @@ export function compileHtml(project: Project, scenes: Record<string, SceneDoc>, 
   const tp = project.settings.titlePage
   const customTitle = hasCustomTitle(project.title)
 
-  if (tp?.title || tp?.author || (customTitle && project.settings.author)) {
+  const hasTitlePage = Boolean(
+    tp?.title ||
+    tp?.author ||
+    tp?.contact ||
+    project.settings.author ||
+    project.author ||
+    customTitle,
+  )
+
+  if (hasTitlePage) {
+    const title = tp?.title ?? project.title
+    const author = tp?.author || project.settings.author || project.author || ''
     body.push(
-      `<div class="title-page"><h1>${escapeHtml(tp?.title ?? project.title)}</h1><p>${escapeHtml(
-        project.settings.author || tp?.author || '',
-      )}</p>${tp?.contact ? `<p class="contact">${escapeHtml(tp.contact)}</p>` : ''}</div>`,
+      `<div class="title-page"><h1>${escapeHtml(title)}</h1>${
+        author ? `<p>${escapeHtml(author)}</p>` : ''
+      }${tp?.contact ? `<p class="contact">${escapeHtml(tp.contact)}</p>` : ''}</div>`,
     )
   }
   if (project.mode === 'screenplay') {
@@ -192,9 +203,18 @@ export function compileHtml(project: Project, scenes: Record<string, SceneDoc>, 
       body.push(`<h1>${escapeHtml(project.title)}</h1>`)
     }
     body.push(`<section class="${project.settings.justify ? 'novel justify' : 'novel'}">`)
+    let pendingHeadings: string[] = []
     for (const u of units) {
-      if (u.kind === 'heading') body.push(`<h${Math.min(u.level + 1, 3)}>${escapeHtml(u.text)}</h${Math.min(u.level + 1, 3)}>`)
-      else body.push(proseSceneHtml(u.doc))
+      if (u.kind === 'heading') {
+        pendingHeadings.push(`<h${Math.min(u.level + 1, 3)}>${escapeHtml(u.text)}</h${Math.min(u.level + 1, 3)}>`)
+      } else {
+        const prefix = pendingHeadings.length ? `${pendingHeadings.join('\n')}\n` : ''
+        pendingHeadings = []
+        body.push(`<div class="scene novel-scene">${prefix}${proseSceneHtml(u.doc)}</div>`)
+      }
+    }
+    if (pendingHeadings.length > 0) {
+      body.push(`<div class="scene novel-scene">${pendingHeadings.join('\n')}</div>`)
     }
     body.push('</section>')
   }

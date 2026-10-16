@@ -21,7 +21,7 @@ const VIEWS: { id: ViewMode; icon: typeof PenLine; label: string }[] = [
 
 export function TopBar() {
   const mode = useProject((s) => s.project?.mode)
-  const lang = useProject((s) => s.project?.settings.language ?? s.language)
+  const lang = useProject((s) => s.language)
   const dirty = useProject((s) => s.dirty)
   const theme = useProject((s) => s.theme)
   const view = useProject((s) => s.view)
@@ -43,8 +43,8 @@ export function TopBar() {
   const formats = mode ? FORMATS_BY_MODE[mode] : []
 
   return (
-    <header className="flex h-12 shrink-0 items-center gap-1.5 border-b border-border bg-surface px-3 lg:gap-3">
-      <div className="flex min-w-0 flex-1 items-center gap-1.5 lg:gap-3">
+    <header className="flex h-12 shrink-0 items-center justify-between border-b border-border bg-surface px-3 gap-2">
+      <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
         <div className="flex shrink-0 items-center gap-2.5 pr-2 select-none">
           <img
             src={logo}
@@ -66,31 +66,25 @@ export function TopBar() {
             onClick={() => setMenu((m) => !m)}
           >
             <FilePlus2 className="h-4 w-4" />
-            <span className="hidden lg:inline">{t.newBtn}</span>
+            <span className="hidden xl:inline">{t.newBtn}</span>
             <ChevronDown className="h-3.5 w-3.5" />
           </button>
           {menu && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setMenu(false)} />
-              <div className="absolute left-0 top-9 z-20 w-72 overflow-hidden rounded-lg border border-border bg-surface p-1 shadow-lg">
+              <div className="absolute left-0 top-9 z-20 w-56 overflow-hidden rounded-lg border border-border bg-surface py-1 shadow-lg">
                 {TEMPLATES.map((tpl) => {
-                  const Icon = tpl.icon
                   const name = tpl.mode === 'screenplay' ? t.templateScreenplayName : t.templateNovelName
-                  const desc = tpl.mode === 'screenplay' ? t.templateScreenplayDesc : t.templateNovelDesc
                   return (
                     <button
                       key={tpl.id}
-                      className="group flex w-full items-start gap-2.5 rounded-md px-2.5 py-2 text-left hover:bg-surface-2"
+                      className="block w-full px-3 py-2 text-left text-sm text-ink-soft hover:bg-surface-2 hover:text-ink transition-colors cursor-pointer"
                       onClick={() => {
                         newProject(tpl.mode, undefined, templateOpts(tpl))
                         setMenu(false)
                       }}
                     >
-                      <Icon className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
-                      <div className="min-w-0 flex-1">
-                        <div className="text-sm font-medium text-ink group-hover:text-accent">{name}</div>
-                        <div className="text-[11px] leading-tight text-ink-faint">{desc}</div>
-                      </div>
+                      {name}
                     </button>
                   )
                 })}
@@ -112,7 +106,7 @@ export function TopBar() {
               onClick={() => openProject()}
             >
               <FolderOpen className="h-4 w-4" />
-              <span className="hidden lg:inline">{t.openBtn}</span>
+              <span className="hidden xl:inline">{t.openBtn}</span>
             </button>
             <button
               className="rounded-r-md px-1 py-1.5 hover:text-ink transition-colors cursor-pointer"
@@ -195,7 +189,7 @@ export function TopBar() {
               onClick={() => void save()}
             >
               <Save className="h-4 w-4" />
-              <span className="hidden lg:inline">{t.saveBtn}</span>
+              <span className="hidden xl:inline">{t.saveBtn}</span>
             </button>
             <button
               className="rounded-r-md px-1 py-1.5 hover:text-ink transition-colors cursor-pointer"
@@ -241,7 +235,7 @@ export function TopBar() {
                       void runExport(f)
                     }}
                   >
-                    {f === 'txt' ? t.exportTxt : f === 'print' ? t.exportPrint : EXPORT_LABEL[f]}
+                    {f === 'txt' ? t.exportTxt : EXPORT_LABEL[f]}
                   </button>
                 ))}
               </div>
@@ -257,26 +251,28 @@ export function TopBar() {
         </div>
       </div>
 
-      <div className="flex shrink-0 items-center gap-0.5 rounded-lg bg-surface-2 p-0.5">
-        {VIEWS.map((v) => {
-          const Icon = v.icon
-          return (
-            <button
-              key={v.id}
-              title={v.label}
-              className={cn(
-                'flex items-center gap-1 rounded-md px-2 py-1 text-xs cursor-pointer',
-                view === v.id ? 'bg-surface text-ink shadow-sm' : 'text-ink-soft hover:text-ink',
-              )}
-              onClick={() => setView(v.id)}
-            >
-              <Icon className="h-3.5 w-3.5" /> <span className="hidden lg:inline">{v.label}</span>
-            </button>
-          )
-        })}
+      <div className="flex flex-1 items-center justify-center min-w-0 px-2">
+        <div className="flex shrink-0 items-center gap-0.5 rounded-lg bg-surface-2 p-0.5">
+          {VIEWS.map((v) => {
+            const Icon = v.icon
+            return (
+              <button
+                key={v.id}
+                title={v.label}
+                className={cn(
+                  'flex items-center gap-1 rounded-md px-2 py-1 text-xs cursor-pointer',
+                  view === v.id ? 'bg-surface text-ink shadow-sm' : 'text-ink-soft hover:text-ink',
+                )}
+                onClick={() => setView(v.id)}
+              >
+                <Icon className="h-3.5 w-3.5" /> <span className="hidden sm:inline">{v.label}</span>
+              </button>
+            )
+          })}
+        </div>
       </div>
 
-      <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
+      <div className="flex shrink-0 items-center justify-end gap-1.5 sm:gap-2">
         <span
           className={cn('relative hidden shrink-0 lg:inline-flex', dirty ? 'text-red-500' : 'text-green-600')}
           title={dirty ? t.unsavedChanges : t.savedChanges}

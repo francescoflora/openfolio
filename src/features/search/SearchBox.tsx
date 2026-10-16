@@ -5,7 +5,7 @@ import { searchProject } from '@/core/search'
 import { uiText } from '@/core/i18n'
 
 export function SearchBox() {
-  const lang = useProject((s) => s.project?.settings.language ?? s.language)
+  const lang = useProject((s) => s.language)
   const select = useProject((s) => s.select)
   const setView = useProject((s) => s.setView)
   const [query, setQuery] = useState('')

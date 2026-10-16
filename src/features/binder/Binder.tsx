@@ -26,7 +26,7 @@ interface DragProps {
 
 function NodeRow({ node, depth, dragId, onDragId, over, onOver }: { node: BinderNode; depth: number } & DragProps) {
   const selected = useProject((s) => s.selectedId === node.id)
-  const lang = useProject((s) => s.project?.settings.language ?? s.language)
+  const lang = useProject((s) => s.language)
   const select = useProject((s) => s.select)
   const addScene = useProject((s) => s.addScene)
   const addFolder = useProject((s) => s.addFolder)
@@ -180,7 +180,7 @@ function NodeRow({ node, depth, dragId, onDragId, over, onOver }: { node: Binder
 
 export function Binder() {
   const binder = useProject((s) => s.project?.binder)
-  const lang = useProject((s) => s.project?.settings.language ?? s.language)
+  const lang = useProject((s) => s.language)
   const addFolder = useProject((s) => s.addFolder)
   const addScene = useProject((s) => s.addScene)
   const selectedId = useProject((s) => s.selectedId)
@@ -198,7 +198,7 @@ export function Binder() {
   return (
     <aside className="flex w-72 shrink-0 flex-col border-r border-border bg-surface">
       <div className="flex h-9 shrink-0 items-center justify-between border-b border-border px-3">
-        <span className="text-xs font-semibold uppercase tracking-wide text-ink-faint">Binder</span>
+        <span className="text-xs font-semibold uppercase tracking-wide text-ink-faint">{t.binderTitle}</span>
         <div className="flex items-center gap-1">
           <button
             title={t.addSectionTitle}

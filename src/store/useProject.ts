@@ -166,14 +166,14 @@ function applyTheme(theme: Theme) {
 
 function initialTheme(): Theme {
   if (typeof localStorage === 'undefined') return 'light'
-  const saved = (localStorage.getItem('openfolio.theme') ?? localStorage.getItem('scriptforge.theme')) as Theme | null
+  const saved = localStorage.getItem('openfolio.theme') as Theme | null
   if (saved) return saved
   return typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 }
 
 function initialZoom(): number {
   if (typeof localStorage === 'undefined') return 100
-  const saved = localStorage.getItem('scriptforge.zoom')
+  const saved = localStorage.getItem('openfolio.zoom')
   if (saved) {
     const val = Number(saved)
     if (!isNaN(val) && val >= 50 && val <= 200) return val
@@ -192,6 +192,7 @@ interface State {
   revisionActive: boolean
   currentElement: string | null
   dirty: boolean
+  binderOpen: boolean
   inspectorOpen: boolean
   zoom: number
   toast: { id: number; message: string } | null
@@ -199,6 +200,7 @@ interface State {
   setLanguage: (lang: Language) => void
   setView: (v: ViewMode) => void
   toggleRevision: () => void
+  toggleBinder: () => void
   toggleInspector: () => void
   setZoom: (zoom: number) => void
   setCurrentElement: (t: string | null) => void
@@ -236,6 +238,7 @@ export const useProject = create<State>((set, get) => ({
   revisionActive: false,
   currentElement: null,
   dirty: false,
+  binderOpen: true,
   inspectorOpen: false,
   zoom: initialZoom(),
   toast: null,
@@ -256,24 +259,20 @@ export const useProject = create<State>((set, get) => ({
   setLanguage: (lang) => {
     const normalized = normalizeLanguage(lang)
     saveDefaultLanguage(normalized)
-    set((s) => ({
-      language: normalized,
-      project: s.project
-        ? { ...s.project, settings: { ...s.project.settings, language: normalized } }
-        : null,
-      dirty: s.project ? true : s.dirty,
-    }))
+    set({ language: normalized })
   },
 
   setView: (v) => set({ view: v }),
 
   toggleRevision: () => set((s) => ({ revisionActive: !s.revisionActive })),
 
+  toggleBinder: () => set((s) => ({ binderOpen: !s.binderOpen })),
+
   toggleInspector: () => set((s) => ({ inspectorOpen: !s.inspectorOpen })),
 
   setZoom: (z) => {
     const clamped = Math.min(200, Math.max(50, Math.round(z)))
-    localStorage.setItem('scriptforge.zoom', String(clamped))
+    localStorage.setItem('openfolio.zoom', String(clamped))
     set((s) => ({
       zoom: clamped,
       project: s.project
@@ -321,7 +320,7 @@ export const useProject = create<State>((set, get) => ({
   },
 
   openProject: async () => {
-    const file = await openTextFile([PROJECT_EXTENSION, 'scriptforge', 'json'])
+    const file = await openTextFile([PROJECT_EXTENSION, 'json'])
     if (!file) return
     try {
       const { project, scenes } = parseProjectFile(file.text)
@@ -333,7 +332,6 @@ export const useProject = create<State>((set, get) => ({
         filePath: file.path ?? null,
         dirty: false,
         view: 'editor',
-        language: normalizeLanguage(p.settings.language),
         zoom: p.settings.zoom ?? get().zoom ?? initialZoom(),
       })
       if (file.path) addRecent(file.path, p.title, p.mode)
@@ -397,7 +395,6 @@ export const useProject = create<State>((set, get) => ({
         filePath: path,
         dirty: false,
         view: 'editor',
-        language: normalizeLanguage(p.settings.language),
         zoom: p.settings.zoom ?? get().zoom ?? initialZoom(),
       })
       addRecent(path, p.title, p.mode)
@@ -424,7 +421,7 @@ export const useProject = create<State>((set, get) => ({
   save: async (opts) => {
     const { project, scenes, filePath, language } = get()
     if (!project) return
-    const t = uiText(project.settings.language ?? language)
+    const t = uiText(language)
     try {
       const text = serializeProjectFile(project, scenes)
       const name = `${slug(project.title)}.${PROJECT_EXTENSION}`
@@ -539,12 +536,10 @@ export const useProject = create<State>((set, get) => ({
   updateSettings: (patch) => {
     const project = get().project
     if (!project) return
-    if (patch.language) saveDefaultLanguage(patch.language)
-    set((s) => ({
-      language: patch.language ? normalizeLanguage(patch.language) : s.language,
+    set({
       project: { ...project, settings: { ...project.settings, ...patch } },
       dirty: true,
-    }))
+    })
   },
 
   addSnapshot: (id) => {

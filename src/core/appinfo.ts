@@ -3,8 +3,10 @@ import { isTauri } from './persistence'
 export const APP_NAME = 'OpenFolio'
 export const APP_AUTHOR = 'Francesco Flora'
 export const APP_LICENSE = 'GPL-3.0-or-later'
-/** Mirrors package.json / tauri.conf.json versions. */
-export const APP_VERSION_FALLBACK = '0.1.0'
+declare const __APP_VERSION__: string | undefined
+
+/** Mirrors package.json / tauri.conf.json versions, injected dynamically by Vite. */
+export const APP_VERSION_FALLBACK = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '0.1.0'
 
 /** Pagina GitHub del progetto. */
 export const GITHUB_URL = 'https://github.com/francescoflora/openfolio'

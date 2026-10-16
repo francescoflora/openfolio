@@ -56,6 +56,8 @@ pub struct PdfExportPayload {
     #[serde(default)]
     pub contact: Option<String>,
     #[serde(default)]
+    pub language: Option<String>,
+    #[serde(default)]
     pub font_family: Option<String>,
     #[serde(default)]
     pub font_size_pt: Option<f32>,

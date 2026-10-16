@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { BookOpen, Clapperboard, Clock, FileUp, FolderOpen, Moon, Sun, Trash2 } from 'lucide-react'
+import { BookOpen, ChevronUp, Clapperboard, Clock, FileUp, FolderOpen, Moon, Sun, Trash2 } from 'lucide-react'
 import { useProject } from '@/store/useProject'
 import { TEMPLATES, templateOpts } from '@/core/templates'
 import { listRecent, removeRecent, isTauri } from '@/core/persistence'
 import type { RecentProject } from '@/core/persistence'
 import { uiText } from '@/core/i18n'
 import { LanguageMenu } from '@/features/topbar/LanguageMenu'
+import { cn } from '@/lib/cn'
 import logo from '@/assets/logo.svg'
 
 export function StartScreen() {
@@ -17,6 +18,7 @@ export function StartScreen() {
   const theme = useProject((s) => s.theme)
   const lang = useProject((s) => s.language)
   const [recents, setRecents] = useState<RecentProject[]>(() => (isTauri() ? listRecent() : []))
+  const [importOpen, setImportOpen] = useState(false)
   const t = uiText(lang)
 
   const drop = (path: string) => {
@@ -73,35 +75,79 @@ export function StartScreen() {
           })}
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex items-center gap-2.5">
           <button
-            className="flex items-center gap-2 rounded-lg bg-accent px-3.5 py-1.5 text-sm font-medium text-accent-ink hover:opacity-90 cursor-pointer"
+            className="flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-ink hover:opacity-90 cursor-pointer shadow-sm transition-opacity"
             title={t.openProjectTitle}
             onClick={() => void openProject()}
           >
             <FolderOpen className="h-4 w-4" /> {t.openProjectBtn}
           </button>
-          <button
-            className="flex items-center gap-2 rounded-lg border border-border px-3.5 py-1.5 text-sm font-medium text-ink-soft hover:bg-surface-2 cursor-pointer"
-            title={t.importFountainTitle}
-            onClick={() => void importProject('fountain')}
-          >
-            <FileUp className="h-4 w-4" /> Fountain…
-          </button>
-          <button
-            className="flex items-center gap-2 rounded-lg border border-border px-3.5 py-1.5 text-sm font-medium text-ink-soft hover:bg-surface-2 cursor-pointer"
-            title={t.importFdxTitle}
-            onClick={() => void importProject('fdx')}
-          >
-            <FileUp className="h-4 w-4" /> Final Draft…
-          </button>
-          <button
-            className="flex items-center gap-2 rounded-lg border border-border px-3.5 py-1.5 text-sm font-medium text-ink-soft hover:bg-surface-2 cursor-pointer"
-            title={t.importTxtTitle}
-            onClick={() => void importProject('txt')}
-          >
-            <FileUp className="h-4 w-4" /> {t.importTxtBtn}
-          </button>
+
+          <div className="relative">
+            <button
+              className={cn(
+                'flex items-center gap-2 rounded-lg border border-border bg-surface px-3.5 py-2 text-sm font-medium text-ink-soft hover:bg-surface-2 hover:text-ink cursor-pointer transition-colors shadow-sm',
+                importOpen && 'bg-surface-2 text-ink border-accent/50',
+              )}
+              title={t.importHeader}
+              onClick={() => setImportOpen((o) => !o)}
+            >
+              <FileUp className="h-4 w-4 text-accent" />
+              <span>{t.importHeader}…</span>
+              <ChevronUp className={cn('h-3.5 w-3.5 transition-transform duration-200', importOpen && 'rotate-180')} />
+            </button>
+
+            {importOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setImportOpen(false)} />
+                <div className="absolute left-0 bottom-full mb-1.5 z-20 w-64 overflow-hidden rounded-xl border border-border bg-surface p-1 shadow-xl">
+                  <div className="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-ink-faint">
+                    {t.importHeader}
+                  </div>
+                  <button
+                    className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm text-ink-soft hover:bg-surface-2 hover:text-ink cursor-pointer transition-colors"
+                    onClick={() => {
+                      setImportOpen(false)
+                      void importProject('fountain')
+                    }}
+                  >
+                    <FileUp className="h-4 w-4 text-ink-faint shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <div className="font-medium text-ink">Fountain</div>
+                      <div className="text-[11px] text-ink-faint">.fountain, .spmd</div>
+                    </div>
+                  </button>
+                  <button
+                    className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm text-ink-soft hover:bg-surface-2 hover:text-ink cursor-pointer transition-colors"
+                    onClick={() => {
+                      setImportOpen(false)
+                      void importProject('fdx')
+                    }}
+                  >
+                    <FileUp className="h-4 w-4 text-ink-faint shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <div className="font-medium text-ink">Final Draft</div>
+                      <div className="text-[11px] text-ink-faint">.fdx</div>
+                    </div>
+                  </button>
+                  <button
+                    className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm text-ink-soft hover:bg-surface-2 hover:text-ink cursor-pointer transition-colors"
+                    onClick={() => {
+                      setImportOpen(false)
+                      void importProject('txt')
+                    }}
+                  >
+                    <FileUp className="h-4 w-4 text-ink-faint shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <div className="font-medium text-ink">{t.importTxtBtn.replace('…', '')}</div>
+                      <div className="text-[11px] text-ink-faint">.txt</div>
+                    </div>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
         {isTauri() && recents.length > 0 && (

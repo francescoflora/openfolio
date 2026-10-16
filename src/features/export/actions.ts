@@ -6,7 +6,7 @@ import type { BinderNode, Project } from '@/core/types'
 import type { JSONContent, SceneDoc } from '@/core/json'
 import { nativeExportFdx, nativeExportFountain, nativeExportPdf } from '@/core/native'
 
-export type ExportFormat = 'fountain' | 'fdx' | 'txt' | 'md' | 'docx' | 'epub' | 'pdf' | 'print'
+export type ExportFormat = 'fountain' | 'fdx' | 'txt' | 'md' | 'docx' | 'epub' | 'pdf'
 
 export const EXPORT_LABEL: Record<ExportFormat, string> = {
   fountain: 'Fountain (.fountain)',
@@ -16,10 +16,9 @@ export const EXPORT_LABEL: Record<ExportFormat, string> = {
   docx: 'Word (.docx)',
   epub: 'EPUB',
   pdf: 'PDF (.pdf)',
-  print: 'Stampa',
 }
 
-export const ALL_FORMATS: ExportFormat[] = ['fdx', 'fountain', 'pdf', 'print', 'docx', 'txt', 'md', 'epub']
+export const ALL_FORMATS: ExportFormat[] = ['fdx', 'fountain', 'pdf', 'docx', 'txt', 'md', 'epub']
 
 export const FORMATS_BY_MODE = {
   screenplay: ALL_FORMATS,
@@ -120,14 +119,18 @@ export async function runExport(format: ExportFormat): Promise<void> {
       const hasTitlePage = Boolean(
         project.settings.titlePage?.title ||
         project.settings.titlePage?.author ||
-        (hasCustomTitle(project.title) && project.settings.author),
+        project.settings.titlePage?.contact ||
+        project.settings.author ||
+        project.author ||
+        hasCustomTitle(project.title),
       )
 
       const pdfBytes = await nativeExportPdf({
-        title: project.settings.titlePage?.title ?? project.title,
+        title: project.settings.titlePage?.title?.trim() || project.title.trim(),
         mode: project.mode,
-        author: project.settings.author || project.settings.titlePage?.author,
-        contact: project.settings.titlePage?.contact,
+        author: project.settings.titlePage?.author?.trim() || project.settings.author?.trim() || project.author?.trim(),
+        contact: project.settings.titlePage?.contact?.trim(),
+        language: project.settings.language,
         font_family: fontFamily,
         font_size_pt: project.settings.fontSizePt,
         justify: project.settings.justify,
@@ -142,11 +145,6 @@ export async function runExport(format: ExportFormat): Promise<void> {
         const { printProject } = await import('./print')
         await printProject(project, scenes)
       }
-      break
-    }
-    case 'print': {
-      const { printProject } = await import('./print')
-      await printProject(project, scenes)
       break
     }
   }

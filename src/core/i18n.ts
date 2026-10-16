@@ -82,7 +82,7 @@ const UI_STRINGS = {
     // Welcome
     welcomeScreenplay: 'Progetto sceneggiatura',
     welcomeNovel: 'Progetto romanzo',
-    welcomeHint: 'scegli una scena dal Binder o creane una nuova.',
+    welcomeHint: 'scegli una scena dal raccoglitore o creane una nuova.',
     newSceneBtn: 'Nuova scena',
     // TopBar
     newBtn: 'Nuovo',
@@ -108,6 +108,8 @@ const UI_STRINGS = {
     // LanguageMenu
     langAndSpellcheck: 'Lingua e controllo ortografico',
     languageLabel: 'Lingua',
+    appLanguageLabel: 'Lingua applicazione',
+    dictionaryLanguageLabel: 'Lingua dizionario (controllo ortografico)',
     spellcheckLabel: 'Controllo ortografico',
     // UpdateMenu & AboutModal & TitlePageModal
     checkUpdates: 'Controlla aggiornamenti',
@@ -132,6 +134,9 @@ const UI_STRINGS = {
     contactLabel: 'Contatto',
     contactPlaceholder: 'Contatti, agente, note di copertina…',
     // Binder & Search
+    binderTitle: 'Raccoglitore',
+    openBinderTitle: 'Apri raccoglitore',
+    closeBinderTitle: 'Chiudi raccoglitore',
     addSectionTitle: 'Aggiungi sezione/parte',
     addSceneTitle: 'Aggiungi scena',
     addChapterTitle: 'Aggiungi capitolo',
@@ -203,7 +208,6 @@ const UI_STRINGS = {
     modeNovel: 'Romanzo',
     // Export labels
     exportTxt: 'Testo semplice (.txt)',
-    exportPrint: 'Stampa',
   },
   en: {
     // Splash
@@ -233,7 +237,7 @@ const UI_STRINGS = {
     // Welcome
     welcomeScreenplay: 'Screenplay project',
     welcomeNovel: 'Novel project',
-    welcomeHint: 'select a scene from the Binder or create a new one.',
+    welcomeHint: 'select a scene from the binder or create a new one.',
     newSceneBtn: 'New scene',
     // TopBar
     newBtn: 'New',
@@ -259,6 +263,8 @@ const UI_STRINGS = {
     // LanguageMenu
     langAndSpellcheck: 'Language & spellcheck',
     languageLabel: 'Language',
+    appLanguageLabel: 'Application language',
+    dictionaryLanguageLabel: 'Dictionary language (spellcheck)',
     spellcheckLabel: 'Spellcheck',
     // UpdateMenu & AboutModal & TitlePageModal
     checkUpdates: 'Check for updates',
@@ -283,6 +289,9 @@ const UI_STRINGS = {
     contactLabel: 'Contact',
     contactPlaceholder: 'Contact info, agent, cover notes…',
     // Binder & Search
+    binderTitle: 'Binder',
+    openBinderTitle: 'Open binder',
+    closeBinderTitle: 'Close binder',
     addSectionTitle: 'Add section/part',
     addSceneTitle: 'Add scene',
     addChapterTitle: 'Add chapter',
@@ -354,7 +363,6 @@ const UI_STRINGS = {
     modeNovel: 'Novel',
     // Export labels
     exportTxt: 'Plain text (.txt)',
-    exportPrint: 'Print',
   },
 } as const
 

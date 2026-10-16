@@ -172,12 +172,25 @@ export async function exportDocx(project: Project, scenes: Record<string, SceneD
   )
   const fontSizePt = project.settings.fontSizePt || 12
 
-  if (tp?.title || tp?.author || (customTitle && project.settings.author)) {
+  const hasTitlePage = Boolean(
+    tp?.title ||
+    tp?.author ||
+    tp?.contact ||
+    project.settings.author ||
+    project.author ||
+    customTitle,
+  )
+
+  if (hasTitlePage) {
+    const titleText = tp?.title?.trim() || project.title.trim()
+    const authorText = tp?.author?.trim() || project.settings.author?.trim() || project.author?.trim() || ''
+    const contactText = tp?.contact?.trim() || ''
+
     children.push(
       new docx.Paragraph({
         children: [
           new docx.TextRun({
-            text: tp?.title ?? (customTitle ? project.title : ''),
+            text: project.mode === 'screenplay' ? titleText.toUpperCase() : titleText,
             bold: true,
             size: 36,
             font: headingFont,
@@ -186,52 +199,58 @@ export async function exportDocx(project: Project, scenes: Record<string, SceneD
         alignment: docx.AlignmentType.CENTER,
         spacing: { before: 2880, after: 720 },
       }),
-      new docx.Paragraph({
-        children: [
-          new docx.TextRun({
-            text: project.settings.author || tp?.author || '',
-            size: 24,
-            font: bodyFont,
-          }),
-        ],
-        alignment: docx.AlignmentType.CENTER,
-        spacing: { after: 1440 },
-      }),
     )
-    if (tp?.contact) {
-      children.push(
+
+    if (authorText) {
+      const isEn = project.settings.language === 'en'
+      const byPrefix = project.mode === 'novel'
+        ? (isEn ? 'by ' : 'di ')
+        : (isEn ? 'written by\n\n' : 'scritto da\n\n')
+
+      const authorParagraphs = (byPrefix + authorText).split('\n').map((line) =>
         new docx.Paragraph({
           children: [
             new docx.TextRun({
-              text: tp.contact,
+              text: line.trim(),
+              size: 24,
+              font: bodyFont,
+            }),
+          ],
+          alignment: docx.AlignmentType.CENTER,
+          spacing: { after: 360 },
+        }),
+      )
+      children.push(...authorParagraphs)
+    }
+
+    if (contactText) {
+      const contactParagraphs = contactText.split('\n').map((line, idx) =>
+        new docx.Paragraph({
+          children: [
+            new docx.TextRun({
+              text: line.trim(),
               size: 20,
               font: bodyFont,
             }),
           ],
           alignment: docx.AlignmentType.CENTER,
+          spacing: idx === 0 ? { before: 2160, after: 120 } : { after: 120 },
         }),
       )
+      children.push(...contactParagraphs)
     }
+
     children.push(new docx.Paragraph({ children: [new docx.PageBreak()] }))
-  } else if (customTitle && !tp?.title) {
-    children.push(
-      new docx.Paragraph({
-        children: [
-          new docx.TextRun({
-            text: project.title,
-            bold: true,
-            size: 32,
-            font: headingFont,
-          }),
-        ],
-        alignment: docx.AlignmentType.CENTER,
-        spacing: { before: 720, after: 480 },
-      }),
-    )
   }
+
+  let isFirstUnit = true
+  let headingJustAdded = false
 
   for (const u of units) {
     if (u.kind === 'heading') {
+      if (!isFirstUnit) {
+        children.push(new docx.Paragraph({ children: [new docx.PageBreak()] }))
+      }
       children.push(
         new docx.Paragraph({
           children: [
@@ -246,8 +265,17 @@ export async function exportDocx(project: Project, scenes: Record<string, SceneD
           spacing: { before: 720, after: 360 },
         }),
       )
+      headingJustAdded = true
+      isFirstUnit = false
       continue
     }
+
+    if (!isFirstUnit && !headingJustAdded) {
+      children.push(new docx.Paragraph({ children: [new docx.PageBreak()] }))
+    }
+    headingJustAdded = false
+    isFirstUnit = false
+
     for (const n of u.doc.content) {
       children.push(
         project.mode === 'screenplay'
@@ -333,19 +361,44 @@ export async function exportEpub(project: Project, scenes: Record<string, SceneD
   const { default: JSZip } = await import('jszip')
   const units = compileUnits(project, scenes)
   const chapters: { title: string; body: string }[] = []
-  let current: { title: string; body: string[] } | null = null
+  let pendingHeadings: string[] = []
 
   for (const u of units) {
     if (u.kind === 'heading') {
-      if (current) chapters.push({ title: current.title, body: current.body.join('\n') })
-      current = { title: u.text, body: [] }
+      pendingHeadings.push(u.text)
+      continue
+    }
+
+    const sceneContent = sceneXhtml(u.doc, project.mode)
+    if (pendingHeadings.length > 0) {
+      const headingHtml = pendingHeadings
+        .map((h, idx) => `<h${Math.min(idx + 1, 3)}>${escapeHtml(h)}</h${Math.min(idx + 1, 3)}>`)
+        .join('\n')
+      const tocTitle = pendingHeadings.join(' — ')
+      chapters.push({
+        title: tocTitle,
+        body: `<section class="scene">\n${headingHtml}\n${sceneContent}\n</section>`,
+      })
+      pendingHeadings = []
     } else {
-      if (!current) current = { title: u.title, body: [] }
-      current.body.push(sceneXhtml(u.doc, project.mode))
+      chapters.push({
+        title: u.title,
+        body: `<section class="scene">\n${sceneContent}\n</section>`,
+      })
     }
   }
-  if (current) chapters.push({ title: current.title, body: current.body.join('\n') })
-  if (!chapters.length) chapters.push({ title: project.title, body: '<p></p>' })
+
+  if (pendingHeadings.length > 0) {
+    const headingHtml = pendingHeadings
+      .map((h, idx) => `<h${Math.min(idx + 1, 3)}>${escapeHtml(h)}</h${Math.min(idx + 1, 3)}>`)
+      .join('\n')
+    chapters.push({
+      title: pendingHeadings.join(' — '),
+      body: `<section class="scene">\n${headingHtml}\n</section>`,
+    })
+  }
+
+  if (!chapters.length) chapters.push({ title: project.title, body: '<section class="scene"><p></p></section>' })
 
   const zip = new JSZip()
   zip.file('mimetype', 'application/epub+zip', { compression: 'STORE' })
@@ -357,20 +410,58 @@ export async function exportEpub(project: Project, scenes: Record<string, SceneD
 </container>`,
   )
   const justifyCss = project.settings.justify ? ' p{text-align:justify}' : ''
-  zip.file('OEBPS/style.css', `body{font-family:serif;line-height:1.5} h1,h2{font-family:sans-serif}${justifyCss}`)
+  zip.file(
+    'OEBPS/style.css',
+    `body{font-family:serif;line-height:1.5} h1,h2,h3{font-family:sans-serif} .scene{page-break-before:always;break-before:page}${justifyCss}`,
+  )
+
+  const tp = project.settings.titlePage
+  const customTitle = hasCustomTitle(project.title)
+  const hasTitlePage = Boolean(
+    tp?.title ||
+    tp?.author ||
+    tp?.contact ||
+    project.settings.author ||
+    project.author ||
+    customTitle,
+  )
+
+  const titleText = tp?.title?.trim() || project.title.trim()
+  const authorText = tp?.author?.trim() || project.settings.author?.trim() || project.author?.trim() || ''
+  const contactText = tp?.contact?.trim() || ''
+
+  if (hasTitlePage) {
+    const isEn = project.settings.language === 'en'
+    const byPrefix = project.mode === 'novel' ? (isEn ? 'by' : 'di') : (isEn ? 'written by' : 'scritto da')
+    const titlePageXhtml = `<?xml version="1.0" encoding="UTF-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
+<head>
+  <title>${escapeHtml(titleText)}</title>
+  <link rel="stylesheet" type="text/css" href="style.css"/>
+</head>
+<body class="title-page" epub:type="titlepage" style="margin:0;padding:2em;text-align:center;">
+  <div style="margin-top:20vh;margin-bottom:2em;">
+    <h1 style="font-size:2.2em;font-family:sans-serif;text-transform:uppercase;margin-bottom:0.5em;line-height:1.2;">${escapeHtml(project.mode === 'screenplay' ? titleText.toUpperCase() : titleText)}</h1>
+    ${authorText ? `<p style="font-size:1.2em;font-style:italic;margin-top:1.5em;color:#444;">${escapeHtml(byPrefix)} ${escapeHtml(authorText)}</p>` : ''}
+  </div>
+  ${contactText ? `<div style="margin-top:25vh;font-size:0.85em;color:#666;white-space:pre-line;line-height:1.4;">${escapeHtml(contactText)}</div>` : ''}
+</body>
+</html>`
+    zip.file('OEBPS/title.xhtml', titlePageXhtml)
+  }
 
   const manifest = chapters.map((_, i) => `<item id="c${i}" href="c${i}.xhtml" media-type="application/xhtml+xml"/>`).join('\n')
   const spine = chapters.map((_, i) => `<itemref idref="c${i}"/>`).join('\n')
 
   const xhtml = (title: string, body: string) => `<?xml version="1.0" encoding="UTF-8"?>
 <html xmlns="http://www.w3.org/1999/xhtml"><head><title>${escapeHtml(title)}</title>
-<link rel="stylesheet" type="text/css" href="style.css"/></head><body><h1>${escapeHtml(title)}</h1>${body}</body></html>`
+<link rel="stylesheet" type="text/css" href="style.css"/></head><body>${body}</body></html>`
 
   zip.file(
     'OEBPS/nav.xhtml',
     `<?xml version="1.0" encoding="UTF-8"?>
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>Indice</title></head>
-<body><nav epub:type="toc"><ol>${chapters.map((c, i) => `<li><a href="c${i}.xhtml">${escapeHtml(c.title)}</a></li>`).join('')}</ol></nav></body></html>`,
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>${escapeHtml(project.settings.language === 'en' ? 'Table of Contents' : 'Indice')}</title></head>
+<body><nav epub:type="toc"><ol>${hasTitlePage ? `<li><a href="title.xhtml">${escapeHtml(project.settings.language === 'en' ? 'Title Page' : 'Frontespizio')}</a></li>` : ''}${chapters.map((c, i) => `<li><a href="c${i}.xhtml">${escapeHtml(c.title)}</a></li>`).join('')}</ol></nav></body></html>`,
   )
 
   zip.file(
@@ -379,14 +470,14 @@ export async function exportEpub(project: Project, scenes: Record<string, SceneD
 <package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="bookid">
 <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
 <dc:identifier id="bookid">urn:uuid:${project.id}</dc:identifier>
-<dc:title>${escapeHtml(project.title)}</dc:title>
+<dc:title>${escapeHtml(titleText)}</dc:title>
 <dc:language>${project.settings.language ?? 'it'}</dc:language>
-<dc:creator>${escapeHtml(project.settings.author || project.author || 'Anonimo')}</dc:creator>
+<dc:creator>${escapeHtml(authorText || 'Anonimo')}</dc:creator>
 </metadata>
 <manifest><item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>
 <item id="css" href="style.css" media-type="text/css"/>
-${manifest}</manifest>
-<spine>${spine}</spine>
+${hasTitlePage ? '<item id="titlepage" href="title.xhtml" media-type="application/xhtml+xml"/>\n' : ''}${manifest}</manifest>
+<spine>${hasTitlePage ? '<itemref idref="titlepage"/>\n' : ''}${spine}</spine>
 </package>`,
   )
 

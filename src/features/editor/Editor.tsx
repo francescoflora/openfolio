@@ -13,6 +13,8 @@ import {
   Highlighter,
   History,
   Indent,
+  PanelLeftClose,
+  PanelLeftOpen,
   PanelRightClose,
   PanelRightOpen,
   Pilcrow,
@@ -87,17 +89,20 @@ export function Editor({ sceneId, mode }: { sceneId: string; mode: ProjectMode }
   const projectId = useProject((s) => s.project?.id)
   const revisionActive = useProject((s) => s.revisionActive)
   const toggleRevision = useProject((s) => s.toggleRevision)
+  const binderOpen = useProject((s) => s.binderOpen)
+  const toggleBinder = useProject((s) => s.toggleBinder)
   const inspectorOpen = useProject((s) => s.inspectorOpen)
   const toggleInspector = useProject((s) => s.toggleInspector)
   const zoom = useProject((s) => s.zoom ?? 100)
   const currentElement = useProject((s) => s.currentElement)
-  const language = useProject((s) => s.project?.settings.language ?? s.language)
+  const appLanguage = useProject((s) => s.language)
+  const dictionaryLanguage = useProject((s) => s.project?.settings.language ?? s.language)
   const spellcheck = useProject((s) => s.project?.settings.spellcheck) ?? true
   const justify = useProject((s) => s.project?.settings.justify) ?? (mode === 'novel')
   const indent = useProject((s) => s.project?.settings.indent) ?? (mode === 'novel')
   const elementFonts = useProject((s) => s.project?.settings.elementFonts)
   const updateSettings = useProject((s) => s.updateSettings)
-  const t = uiText(language)
+  const t = uiText(appLanguage)
 
   const elementFontStyles = useMemo(() => {
     const styles: Record<string, string> = {}
@@ -106,7 +111,7 @@ export function Editor({ sceneId, mode }: { sceneId: string; mode: ProjectMode }
     }
     return styles
   }, [elementFonts])
-  const labels = elementLabels(language)
+  const labels = elementLabels(appLanguage)
   const schema = mode === 'screenplay' ? screenplaySchema : proseSchema
 
   const runCommand = (fn: (state: EditorState, dispatch?: (tr: Transaction) => void) => boolean) => {
@@ -225,9 +230,9 @@ export function Editor({ sceneId, mode }: { sceneId: string; mode: ProjectMode }
   useEffect(() => {
     const view = viewRef.current
     if (!view) return
-    view.setProps({ attributes: { spellcheck: spellcheck ? 'true' : 'false', lang: language } })
+    view.setProps({ attributes: { spellcheck: spellcheck ? 'true' : 'false', lang: dictionaryLanguage } })
     view.dispatch(view.state.tr)
-  }, [language, spellcheck])
+  }, [dictionaryLanguage, spellcheck])
 
   useEffect(() => {
     const el = scrollRef.current
@@ -269,8 +274,22 @@ export function Editor({ sceneId, mode }: { sceneId: string; mode: ProjectMode }
   return (
     <div className="relative flex min-h-0 min-w-0 flex-1 flex-col bg-canvas">
       <div className="relative flex h-9 shrink-0 items-center justify-between border-b border-border bg-surface px-3 text-xs">
-        {/* Left: Element Selector / Block switch */}
-        <div className="flex items-center gap-1.5">
+        {/* Left: Binder Toggle & Element Selector / Block switch */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            className={cn(
+              'flex h-7 w-7 items-center justify-center rounded-md border transition cursor-pointer select-none',
+              binderOpen
+                ? 'border-accent/50 bg-accent/15 text-accent shadow-xs'
+                : 'border-transparent text-ink-muted hover:bg-surface-2 hover:text-ink',
+            )}
+            onClick={toggleBinder}
+            title={binderOpen ? t.closeBinderTitle : t.openBinderTitle}
+            aria-label={binderOpen ? t.closeBinderTitle : t.openBinderTitle}
+          >
+            {binderOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
+          </button>
+
           {mode === 'screenplay' ? (
             <select
               className="rounded-md border border-border bg-surface-2 px-2 py-1 text-xs font-medium text-ink outline-none transition hover:border-border-strong focus:border-accent"
@@ -317,7 +336,7 @@ export function Editor({ sceneId, mode }: { sceneId: string; mode: ProjectMode }
         </div>
 
         {/* Center: Formatting, Undo/Redo & Revision Icons */}
-        <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1">
+        <div className="flex flex-1 items-center justify-center gap-1 min-w-0 px-2">
           {mode === 'novel' && (
             <>
               {/* Giustificato */}
@@ -435,7 +454,7 @@ export function Editor({ sceneId, mode }: { sceneId: string; mode: ProjectMode }
         </div>
 
         {/* Right: Notes Sidebar Toggle */}
-        <div className="flex items-center">
+        <div className="flex items-center shrink-0">
           <button
             className={cn(
               'flex h-7 w-7 items-center justify-center rounded-md border transition cursor-pointer select-none',

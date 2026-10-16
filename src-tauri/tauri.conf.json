@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "OpenFolio",
-  "version": "0.1.0",
+  "version": "../package.json",
   "identifier": "org.openfolio.desktop",
   "build": {
     "frontendDist": "../dist",
@@ -13,10 +13,10 @@
     "windows": [
       {
         "title": "OpenFolio",
-        "width": 760,
-        "height": 520,
+        "width": 640,
+        "height": 400,
         "minWidth": 640,
-        "minHeight": 460,
+        "minHeight": 400,
         "center": true,
         "decorations": false,
         "skipTaskbar": true,
@@ -44,13 +44,6 @@
         "description": "Documento di Scrittura OpenFolio",
         "role": "Editor",
         "mimeType": "application/x-openfolio"
-      },
-      {
-        "ext": ["scriptforge"],
-        "name": "ScriptForge Legacy Document",
-        "description": "Documento ScriptForge (Retrocompatibile)",
-        "role": "Editor",
-        "mimeType": "application/x-scriptforge"
       }
     ],
     "resources": {
@@ -60,7 +53,7 @@
       "nsis": {
         "installerIcon": "icons/icon.ico",
         "installerHooks": "nsis/installer-hooks.nsh",
-        "languages": ["Italian", "English"],
+        "languages": ["English", "Italian"],
         "displayLanguageSelector": true
       }
     },

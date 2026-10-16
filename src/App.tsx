@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Plus } from 'lucide-react'
 import { TopBar } from '@/features/topbar/TopBar'
 import { Binder } from '@/features/binder/Binder'
@@ -18,7 +18,7 @@ import logo from '@/assets/logo.svg'
 
 function Welcome() {
   const project = useProject((s) => s.project)
-  const lang = useProject((s) => s.project?.settings.language ?? s.language)
+  const lang = useProject((s) => s.language)
   const addScene = useProject((s) => s.addScene)
   if (!project) return null
   const title = project.settings.titlePage?.title || project.title
@@ -45,6 +45,7 @@ function Welcome() {
 
 export default function App() {
   const [showSplash, setShowSplash] = useState(true)
+  const [isAppReady, setIsAppReady] = useState(false)
   const selectedId = useProject((s) => s.selectedId)
   const hasProject = useProject((s) => s.project !== null)
   const mode = useProject((s) => s.project?.mode)
@@ -71,23 +72,53 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [])
 
+  // Caricamento reale all'avvio: font tipografici + lingua installer + eventuale file aperto con doppio clic
   useEffect(() => {
-    if (!isTauri()) return
-    void import('@tauri-apps/api/core').then(({ invoke }) => {
-      if (!hasStoredLanguage()) {
-        void invoke<string | null>('installer_language').then((lang) => {
-          if (lang === 'en' || lang === 'it') {
-            useProject.getState().setLanguage(lang as Language)
-          }
-        })
+    let cancelled = false
+
+    const init = async () => {
+      try {
+        const fontsPromise =
+          'fonts' in document ? document.fonts.ready.catch(() => {}) : Promise.resolve()
+
+        let tauriPromise = Promise.resolve()
+        if (isTauri()) {
+          tauriPromise = (async () => {
+            try {
+              const { invoke } = await import('@tauri-apps/api/core')
+              if (!hasStoredLanguage()) {
+                const lang = await invoke<string | null>('installer_language').catch(() => null)
+                if (lang === 'en' || lang === 'it') {
+                  useProject.getState().setLanguage(lang as Language)
+                }
+              }
+              const launchPath = await invoke<string | null>('launch_file').catch(() => null)
+              if (launchPath) {
+                await useProject.getState().openRecentProject(launchPath).catch(() => {})
+              }
+            } catch (err) {
+              console.warn('Tauri startup init error', err)
+            }
+          })()
+        }
+
+        await Promise.all([fontsPromise, tauriPromise])
+      } finally {
+        if (!cancelled) {
+          setIsAppReady(true)
+        }
       }
-      void invoke<string | null>('launch_file').then((path) => {
-        if (path) void useProject.getState().openRecentProject(path)
-      })
-    })
+    }
+
+    void init()
+
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   const view = useProject((s) => s.view)
+  const binderOpen = useProject((s) => s.binderOpen)
   const inspectorOpen = useProject((s) => s.inspectorOpen)
   const hasScene = !!(selectedId && hasProject)
 
@@ -102,51 +133,37 @@ export default function App() {
     }
   }, [projectTitle])
 
-  const handleSplashFinish = async () => {
+  const handleSplashFinish = useCallback(async () => {
     setShowSplash(false)
     if (isTauri()) {
       try {
         const { getCurrentWindow } = await import('@tauri-apps/api/window')
+        const { LogicalSize } = await import('@tauri-apps/api/dpi')
         const win = getCurrentWindow()
+
+        // Ripristina decorazioni native (barra del titolo di Windows) e mostra in taskbar
         await win.setDecorations(true)
         await win.setSkipTaskbar(false)
+        await win.setFullscreen(false)
+
+        // Calcola dimensioni ottimali senza sforare lo schermo
+        const availW = window.screen.availWidth || 1280
+        const availH = window.screen.availHeight || 800
+        const targetW = Math.min(1360, Math.max(960, Math.round(availW * 0.88)))
+        const targetH = Math.min(860, Math.max(620, Math.round(availH * 0.90)))
+
+        await win.setMinSize(new LogicalSize(760, 500))
+        await win.setSize(new LogicalSize(targetW, targetH))
+        await win.center()
       } catch (err) {
-        console.warn('Could not restore window decorations', err)
+        console.warn('Splash transition error', err)
       }
     }
-  }
-
-  useEffect(() => {
-    if (!isTauri() || showSplash) return
-    void import('@tauri-apps/api/window').then(async ({ getCurrentWindow }) => {
-      const { LogicalSize } = await import('@tauri-apps/api/dpi')
-      const win = getCurrentWindow()
-      try {
-        if (hasProject) {
-          const max = await win.isMaximized().catch(() => false)
-          await win.setMinSize(new LogicalSize(900, 600))
-          if (!max) {
-            await win.setSize(new LogicalSize(1280, 820))
-            await win.center()
-          }
-        } else {
-          const max = await win.isMaximized().catch(() => false)
-          if (max) {
-            await win.unmaximize().catch(() => {})
-          }
-          await win.setMinSize(new LogicalSize(640, 460))
-          await win.setSize(new LogicalSize(760, 520))
-          await win.center()
-        }
-      } catch (err) {
-        console.warn('Auto-resize window error', err)
-      }
-    })
-  }, [hasProject, showSplash])
+  }, [])
 
   return (
     <>
-      {showSplash && <SplashScreen onFinish={handleSplashFinish} />}
+      {showSplash && <SplashScreen isReady={isAppReady} onFinish={handleSplashFinish} />}
       <div className="flex h-full min-w-0 flex-col overflow-hidden">
         {!hasProject || !mode ? (
           <StartScreen />
@@ -154,7 +171,7 @@ export default function App() {
           <>
             <TopBar />
             <div className="flex min-h-0 min-w-0 flex-1">
-              <Binder />
+              {binderOpen && <Binder />}
               {view === 'corkboard' ? (
                 <Corkboard />
               ) : view === 'outline' ? (

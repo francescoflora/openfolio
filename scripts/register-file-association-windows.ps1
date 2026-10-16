@@ -17,15 +17,11 @@ New-Item -Path "HKCU:\Software\Classes\.openfolio" -Force | Out-Null
 Set-ItemProperty -Path "HKCU:\Software\Classes\.openfolio" -Name "(Default)" -Value "OpenFolio.Document"
 Set-ItemProperty -Path "HKCU:\Software\Classes\.openfolio" -Name "Content Type" -Value "application/x-openfolio"
 
-# 2. Registra l'estensione .scriptforge (retrocompatibilità)
-New-Item -Path "HKCU:\Software\Classes\.scriptforge" -Force | Out-Null
-Set-ItemProperty -Path "HKCU:\Software\Classes\.scriptforge" -Name "(Default)" -Value "OpenFolio.Document"
-
-# 3. Registra il ProgID OpenFolio.Document
+# 2. Registra il ProgID OpenFolio.Document
 New-Item -Path "HKCU:\Software\Classes\OpenFolio.Document" -Force | Out-Null
 Set-ItemProperty -Path "HKCU:\Software\Classes\OpenFolio.Document" -Name "(Default)" -Value "Documento di Scrittura OpenFolio"
 
-# 4. Associa l'icona dedicata del documento
+# 3. Associa l'icona dedicata del documento
 if (Test-Path $IconFullPath) {
     New-Item -Path "HKCU:\Software\Classes\OpenFolio.Document\DefaultIcon" -Force | Out-Null
     Set-ItemProperty -Path "HKCU:\Software\Classes\OpenFolio.Document\DefaultIcon" -Name "(Default)" -Value "`"$IconFullPath`",0"
@@ -34,14 +30,14 @@ if (Test-Path $IconFullPath) {
     Write-Warning "File icona non trovato in $IconFullPath"
 }
 
-# 5. Associa il comando di apertura (se l'eseguibile esiste)
+# 4. Associa il comando di apertura (se l'eseguibile esiste)
 if (Test-Path $ExeFullPath) {
     New-Item -Path "HKCU:\Software\Classes\OpenFolio.Document\shell\open\command" -Force | Out-Null
     Set-ItemProperty -Path "HKCU:\Software\Classes\OpenFolio.Document\shell\open\command" -Name "(Default)" -Value "`"$ExeFullPath`" `"%1`""
     Write-Host "Comando di apertura associato a $ExeFullPath" -ForegroundColor Green
 }
 
-# 6. Forza l'aggiornamento della cache icone di Windows Explorer
+# 5. Forza l'aggiornamento della cache icone di Windows Explorer
 $code = @"
 using System;
 using System.Runtime.InteropServices;

@@ -23,7 +23,7 @@ function browserDownload(filename: string, data: string | Uint8Array, mime: stri
 }
 
 function mimeForExt(ext: string): string {
-  if (ext === 'openfolio' || ext === 'scriptforge' || ext === 'json') return 'application/json'
+  if (ext === 'openfolio' || ext === 'json') return 'application/json'
   if (ext === 'fdx') return 'application/xml'
   if (ext === 'md') return 'text/markdown'
   return 'text/plain'
@@ -163,7 +163,7 @@ export async function saveDocument(
     try {
       const handle = await w.showSaveFilePicker({
         suggestedName: defaultName,
-        types: pickerTypes(filters[0]?.extensions ?? ['scriptforge']),
+        types: pickerTypes(filters[0]?.extensions ?? ['openfolio']),
       })
       currentHandle = handle
       await writeHandle(handle, text)
