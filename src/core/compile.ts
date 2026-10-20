@@ -1,6 +1,6 @@
 import type { BinderNode, Project } from './types'
 import type { JSONContent, SceneDoc } from './json'
-import { hasCustomTitle, textOf } from './stats'
+import { textOf } from './stats'
 
 export type CompileUnit =
   | { kind: 'heading'; level: number; text: string }
@@ -132,8 +132,32 @@ export const SCREENPLAY_INDENT_IN = {
   dialogueRight: 2,
 } as const
 
+const PAGE_CSS = `
+@page {
+  size: letter;
+  margin: 1in;
+  @bottom-center {
+    content: counter(page);
+    font-size: 10pt;
+    font-family: inherit;
+    color: #000;
+  }
+}
+@page title-page {
+  margin: 1in;
+  @bottom-center {
+    content: none;
+  }
+}
+@page part-page {
+  margin: 1in;
+  @bottom-center {
+    content: none;
+  }
+}
+`
+
 const PRINT_CSS = `
-@page { size: letter; margin: 1in; }
 * { box-sizing: border-box; }
 body { margin: 0; font-family: 'Courier Prime', 'Courier New', monospace; font-size: 12pt; color: #000; }
 h1.book-title { font-family: 'Inter', sans-serif; text-align: center; margin: 3in 1in; font-size: 24pt; }
@@ -147,7 +171,8 @@ h1.book-title { font-family: 'Inter', sans-serif; text-align: center; margin: 3i
 .script-page .el-transition { text-transform: uppercase; font-weight: 700; text-align: right; margin: 1.35em 0; }
 .script-page .el-shot { text-transform: uppercase; font-weight: 700; margin: 1.35em 0; padding-left: ${SCREENPLAY_INDENT_IN.shot}in; }
 .scene { break-before: page; }
-.title-page { break-after: page; text-align: center; margin-top: 3in; }
+.scene.script-page:first-of-type, .novel-scene:first-of-type { counter-reset: page 1; }
+.title-page { page: title-page; break-after: page; text-align: center; margin-top: 3in; }
 .title-page h1 { font-size: 24pt; margin: 0 0 .5in; }
 .title-page .contact { margin-top: 2.5in; font-size: 11pt; white-space: pre-line; }
 .novel section, .novel h1, .novel h2, .novel h3 { break-inside: auto; }
@@ -158,22 +183,15 @@ h1.book-title { font-family: 'Inter', sans-serif; text-align: center; margin: 3i
 .novel { font-size: 12pt; line-height: 2; font-variant-numeric: lining-nums; font-feature-settings: 'lnum' 1; }
 .novel.justify p { text-align: justify; }
 .novel blockquote { font-family: 'Courier Prime', 'Courier New', monospace; font-style: italic; margin: 1em 2em; }
+.part-page { page: part-page; break-before: page; break-after: page; text-align: center; padding-top: 3in; }
+.part-page h1 { font-family: 'EB Garamond', 'Times New Roman', Cambria, serif; text-align: center; text-transform: uppercase; letter-spacing: 0.2em; font-size: 20pt; }
 `
 
 export function compileHtml(project: Project, scenes: Record<string, SceneDoc>, forPrint: boolean): string {
   const units = compileUnits(project, scenes)
   const body: string[] = []
   const tp = project.settings.titlePage
-  const customTitle = hasCustomTitle(project.title)
-
-  const hasTitlePage = Boolean(
-    tp?.title ||
-    tp?.author ||
-    tp?.contact ||
-    project.settings.author ||
-    project.author ||
-    customTitle,
-  )
+  const hasTitlePage = (tp as any)?.disabled !== true
 
   if (hasTitlePage) {
     const title = tp?.title ?? project.title
@@ -199,22 +217,13 @@ export function compileHtml(project: Project, scenes: Record<string, SceneDoc>, 
       body.push(`<section class="scene script-page">${pendingHeadings.join('\n')}</section>`)
     }
   } else {
-    if (customTitle && !tp?.title) {
-      body.push(`<h1>${escapeHtml(project.title)}</h1>`)
-    }
     body.push(`<section class="${project.settings.justify ? 'novel justify' : 'novel'}">`)
-    let pendingHeadings: string[] = []
     for (const u of units) {
       if (u.kind === 'heading') {
-        pendingHeadings.push(`<h${Math.min(u.level + 1, 3)}>${escapeHtml(u.text)}</h${Math.min(u.level + 1, 3)}>`)
+        body.push(`<div class="part-page"><h1>${escapeHtml(u.text.toUpperCase())}</h1></div>`)
       } else {
-        const prefix = pendingHeadings.length ? `${pendingHeadings.join('\n')}\n` : ''
-        pendingHeadings = []
-        body.push(`<div class="scene novel-scene">${prefix}${proseSceneHtml(u.doc)}</div>`)
+        body.push(`<div class="scene novel-scene">${proseSceneHtml(u.doc)}</div>`)
       }
-    }
-    if (pendingHeadings.length > 0) {
-      body.push(`<div class="scene novel-scene">${pendingHeadings.join('\n')}</div>`)
     }
     body.push('</section>')
   }
@@ -230,9 +239,14 @@ export function compileHtml(project: Project, scenes: Record<string, SceneDoc>, 
     })
     .join('\n')
 
+  const showPageNumbers = project.settings.pageNumbers !== false
+  const pageCss = showPageNumbers
+    ? PAGE_CSS
+    : PAGE_CSS.replace(/@bottom-center\s*\{[\s\S]*?\}/g, '')
+
   const style = forPrint
-    ? `<style>${PRINT_CSS}${fontOverrides ? `\n${fontOverrides}` : ''}</style>`
-    : `<style>.script-page,.novel{max-width:8.5in;margin:1in auto;}${PRINT_CSS.replace(/@page[^}]*}/g, '')}${fontOverrides ? `\n${fontOverrides}` : ''}</style>`
+    ? `<style>${pageCss}${PRINT_CSS}${fontOverrides ? `\n${fontOverrides}` : ''}</style>`
+    : `<style>.script-page,.novel{max-width:8.5in;margin:1in auto;}${PRINT_CSS}${fontOverrides ? `\n${fontOverrides}` : ''}</style>`
 
   const fontLinks = `<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=EB+Garamond:ital,wght@0,400..800;1,400..800&family=Inter:wght@400;500;600;700&family=Lora:ital,wght@0,400..700;1,400..700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">`
 

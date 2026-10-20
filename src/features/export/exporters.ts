@@ -1,7 +1,7 @@
 import type { JSONContent, SceneDoc } from '@/core/json'
 import type { Project } from '@/core/types'
 import { compileUnits, escapeHtml, SCREENPLAY_INDENT_IN } from '@/core/compile'
-import { hasCustomTitle, slug, textOf } from '@/core/stats'
+import { slug, textOf } from '@/core/stats'
 import { saveExport } from '@/core/fileio'
 
 const inches = (n: number) => Math.round(n * 1440)
@@ -36,6 +36,13 @@ function screenplayParagraph(docx: Docx, node: JSONContent, elementFonts?: Recor
   const type = node.type ?? 'action'
   const font = cleanFontName(elementFonts?.[type], FONT)
   switch (type) {
+    case 'section_heading':
+    case 'heading':
+      return new docx.Paragraph({
+        children: screenplayRuns(docx, node, font, true),
+        alignment: docx.AlignmentType.CENTER,
+        spacing: { before: 480, after: 240 },
+      })
     case 'scene_heading':
       return new docx.Paragraph({
         children: screenplayRuns(docx, node, font, true),
@@ -154,13 +161,11 @@ function proseParagraph(
   })
 }
 
-export async function exportDocx(project: Project, scenes: Record<string, SceneDoc>): Promise<boolean> {
+export async function buildDocxDocument(project: Project, scenes: Record<string, SceneDoc>): Promise<InstanceType<Docx['Document']>> {
   const docx = await import('docx')
   const units = compileUnits(project, scenes)
   const tp = project.settings.titlePage
-  const children = []
-
-  const customTitle = hasCustomTitle(project.title)
+  const titleChildren: InstanceType<Docx['Paragraph']>[] = []
 
   const bodyFont = cleanFontName(
     project.settings.elementFonts?.paragraph || project.settings.fontFamily,
@@ -172,21 +177,21 @@ export async function exportDocx(project: Project, scenes: Record<string, SceneD
   )
   const fontSizePt = project.settings.fontSizePt || 12
 
-  const hasTitlePage = Boolean(
-    tp?.title ||
-    tp?.author ||
-    tp?.contact ||
-    project.settings.author ||
-    project.author ||
-    customTitle,
-  )
+  const hasTitlePage = (tp as any)?.disabled !== true
 
   if (hasTitlePage) {
-    const titleText = tp?.title?.trim() || project.title.trim()
-    const authorText = tp?.author?.trim() || project.settings.author?.trim() || project.author?.trim() || ''
+    const titleText =
+      tp?.title?.trim() ||
+      project.title.trim() ||
+      (project.settings.language === 'en' ? 'Untitled' : 'Senza titolo')
+    const authorText =
+      tp?.author?.trim() ||
+      project.settings.author?.trim() ||
+      project.author?.trim() ||
+      ''
     const contactText = tp?.contact?.trim() || ''
 
-    children.push(
+    titleChildren.push(
       new docx.Paragraph({
         children: [
           new docx.TextRun({
@@ -220,7 +225,7 @@ export async function exportDocx(project: Project, scenes: Record<string, SceneD
           spacing: { after: 360 },
         }),
       )
-      children.push(...authorParagraphs)
+      titleChildren.push(...authorParagraphs)
     }
 
     if (contactText) {
@@ -233,51 +238,109 @@ export async function exportDocx(project: Project, scenes: Record<string, SceneD
               font: bodyFont,
             }),
           ],
-          alignment: docx.AlignmentType.CENTER,
+          alignment: project.mode === 'screenplay' ? docx.AlignmentType.LEFT : docx.AlignmentType.CENTER,
           spacing: idx === 0 ? { before: 2160, after: 120 } : { after: 120 },
         }),
       )
-      children.push(...contactParagraphs)
+      titleChildren.push(...contactParagraphs)
     }
-
-    children.push(new docx.Paragraph({ children: [new docx.PageBreak()] }))
   }
 
-  let isFirstUnit = true
-  let headingJustAdded = false
+  const sections = []
+  if (hasTitlePage) {
+    sections.push({
+      properties: {
+        page: {
+          size: { width: LETTER_TWIP.width, height: LETTER_TWIP.height },
+          margin: { top: PAGE_MARGIN_TWIP, right: PAGE_MARGIN_TWIP, bottom: PAGE_MARGIN_TWIP, left: PAGE_MARGIN_TWIP },
+        },
+      },
+      children: titleChildren,
+    })
+  }
+
+  const showPageNumbers = project.settings.pageNumbers !== false
+
+  const footer = new docx.Footer({
+    children: [
+      new docx.Paragraph({
+        alignment: docx.AlignmentType.CENTER,
+        children: [
+          new docx.TextRun({
+            children: [docx.PageNumber.CURRENT],
+            font: bodyFont,
+            size: 20, // 10pt
+          }),
+        ],
+      }),
+    ],
+  })
+
+  let currentSceneChildren: InstanceType<Docx['Paragraph']>[] = []
+  let isFirstSceneSection = true
+  let isFirstSceneInBlock = true
+
+  const flushSceneSection = () => {
+    if (currentSceneChildren.length === 0) return
+    const sceneSection: any = {
+      properties: {
+        page: {
+          size: { width: LETTER_TWIP.width, height: LETTER_TWIP.height },
+          margin: { top: PAGE_MARGIN_TWIP, right: PAGE_MARGIN_TWIP, bottom: PAGE_MARGIN_TWIP, left: PAGE_MARGIN_TWIP },
+          pageNumbers: isFirstSceneSection ? { start: 1 } : undefined,
+        },
+      },
+      children: currentSceneChildren,
+    }
+    if (showPageNumbers) {
+      sceneSection.footers = {
+        default: footer,
+      }
+    }
+    sections.push(sceneSection)
+    isFirstSceneSection = false
+    currentSceneChildren = []
+    isFirstSceneInBlock = true
+  }
 
   for (const u of units) {
     if (u.kind === 'heading') {
-      if (!isFirstUnit) {
-        children.push(new docx.Paragraph({ children: [new docx.PageBreak()] }))
-      }
-      children.push(
-        new docx.Paragraph({
-          children: [
-            new docx.TextRun({
-              text: project.mode === 'novel' ? u.text.toUpperCase() : u.text,
-              bold: true,
-              size: project.mode === 'novel' ? 30 : 28,
-              font: headingFont,
-            }),
-          ],
-          alignment: project.mode === 'novel' ? docx.AlignmentType.CENTER : docx.AlignmentType.LEFT,
-          spacing: { before: 720, after: 360 },
-        }),
-      )
-      headingJustAdded = true
-      isFirstUnit = false
+      // Flush prior scene section if any
+      flushSceneSection()
+
+      // Dedicated section page for this part/section heading (no footer => no page number)
+      const headingParagraph = new docx.Paragraph({
+        children: [
+          new docx.TextRun({
+            text: u.text.toUpperCase(),
+            bold: true,
+            size: project.mode === 'novel' ? 36 : 28,
+            font: headingFont,
+          }),
+        ],
+        alignment: docx.AlignmentType.CENTER,
+        spacing: project.mode === 'novel' ? { before: 4000, after: 720 } : { before: 2880, after: 720 },
+      })
+
+      sections.push({
+        properties: {
+          page: {
+            size: { width: LETTER_TWIP.width, height: LETTER_TWIP.height },
+            margin: { top: PAGE_MARGIN_TWIP, right: PAGE_MARGIN_TWIP, bottom: PAGE_MARGIN_TWIP, left: PAGE_MARGIN_TWIP },
+          },
+        },
+        children: [headingParagraph],
+      })
       continue
     }
 
-    if (!isFirstUnit && !headingJustAdded) {
-      children.push(new docx.Paragraph({ children: [new docx.PageBreak()] }))
+    if (!isFirstSceneInBlock) {
+      currentSceneChildren.push(new docx.Paragraph({ children: [new docx.PageBreak()] }))
     }
-    headingJustAdded = false
-    isFirstUnit = false
+    isFirstSceneInBlock = false
 
     for (const n of u.doc.content) {
-      children.push(
+      currentSceneChildren.push(
         project.mode === 'screenplay'
           ? screenplayParagraph(docx, n, project.settings.elementFonts)
           : proseParagraph(
@@ -293,7 +356,21 @@ export async function exportDocx(project: Project, scenes: Record<string, SceneD
     }
   }
 
-  const doc = new docx.Document({
+  flushSceneSection()
+
+  if (sections.length === 0) {
+    sections.push({
+      properties: {
+        page: {
+          size: { width: LETTER_TWIP.width, height: LETTER_TWIP.height },
+          margin: { top: PAGE_MARGIN_TWIP, right: PAGE_MARGIN_TWIP, bottom: PAGE_MARGIN_TWIP, left: PAGE_MARGIN_TWIP },
+        },
+      },
+      children: [new docx.Paragraph({ children: [new docx.TextRun('')] })],
+    })
+  }
+
+  return new docx.Document({
     styles: {
       default: {
         document: {
@@ -310,18 +387,13 @@ export async function exportDocx(project: Project, scenes: Record<string, SceneD
         },
       },
     },
-    sections: [
-      {
-        properties: {
-          page: {
-            size: { width: LETTER_TWIP.width, height: LETTER_TWIP.height },
-            margin: { top: PAGE_MARGIN_TWIP, right: PAGE_MARGIN_TWIP, bottom: PAGE_MARGIN_TWIP, left: PAGE_MARGIN_TWIP },
-          },
-        },
-        children,
-      },
-    ],
+    sections,
   })
+}
+
+export async function exportDocx(project: Project, scenes: Record<string, SceneDoc>): Promise<boolean> {
+  const docx = await import('docx')
+  const doc = await buildDocxDocument(project, scenes)
   const blob = await docx.Packer.toBlob(doc)
   const bytes = new Uint8Array(await blob.arrayBuffer())
   return await saveExport(`${slug(project.title)}.docx`, bytes, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', [
@@ -416,18 +488,17 @@ export async function exportEpub(project: Project, scenes: Record<string, SceneD
   )
 
   const tp = project.settings.titlePage
-  const customTitle = hasCustomTitle(project.title)
-  const hasTitlePage = Boolean(
-    tp?.title ||
-    tp?.author ||
-    tp?.contact ||
-    project.settings.author ||
-    project.author ||
-    customTitle,
-  )
+  const hasTitlePage = (tp as any)?.disabled !== true
 
-  const titleText = tp?.title?.trim() || project.title.trim()
-  const authorText = tp?.author?.trim() || project.settings.author?.trim() || project.author?.trim() || ''
+  const titleText =
+    tp?.title?.trim() ||
+    project.title.trim() ||
+    (project.settings.language === 'en' ? 'Untitled' : 'Senza titolo')
+  const authorText =
+    tp?.author?.trim() ||
+    project.settings.author?.trim() ||
+    project.author?.trim() ||
+    ''
   const contactText = tp?.contact?.trim() || ''
 
   if (hasTitlePage) {

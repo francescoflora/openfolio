@@ -22,7 +22,9 @@
         "skipTaskbar": false,
         "resizable": true,
         "fullscreen": false,
-        "dragDropEnabled": false
+        "dragDropEnabled": false,
+        "visible": false,
+        "backgroundColor": "#000000"
       }
     ],
     "security": {

@@ -76,6 +76,14 @@ export function removeRecent(path: string): void {
   localStorage.setItem(RECENT_KEY, JSON.stringify(listRecent().filter((r) => r.path !== path)))
 }
 
+export function clearRecents(): void {
+  try {
+    localStorage.removeItem(RECENT_KEY)
+  } catch {
+    /* ignore */
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Per-project UI view state (last scene + scroll). UI-only, not document data.
 // ---------------------------------------------------------------------------
@@ -184,4 +192,39 @@ export function resetDefaultAutoParentheses(): void {
     /* ignore */
   }
 }
+
+// ---------------------------------------------------------------------------
+// Tool-wide default auto-continued setting (screenplay mode)
+// ---------------------------------------------------------------------------
+
+const DEFAULT_AUTO_CONTINUED_KEY = 'openfolio.defaultAutoContinued'
+
+export function loadDefaultAutoContinued(): boolean {
+  try {
+    if (typeof localStorage === 'undefined') return true
+    const raw = localStorage.getItem(DEFAULT_AUTO_CONTINUED_KEY)
+    return raw !== null ? JSON.parse(raw) === true : true
+  } catch {
+    return true
+  }
+}
+
+export function saveDefaultAutoContinued(enabled: boolean): void {
+  try {
+    if (typeof localStorage === 'undefined') return
+    localStorage.setItem(DEFAULT_AUTO_CONTINUED_KEY, JSON.stringify(enabled))
+  } catch {
+    /* ignore */
+  }
+}
+
+export function resetDefaultAutoContinued(): void {
+  try {
+    if (typeof localStorage === 'undefined') return
+    localStorage.removeItem(DEFAULT_AUTO_CONTINUED_KEY)
+  } catch {
+    /* ignore */
+  }
+}
+
 

@@ -71,3 +71,47 @@ jobs:
                  Select-Object -First 1
           if (-not $exe) { Write-Error "Eseguibile non trovato"; exit 1 }
           gh release upload "v${{ steps.tauri.outputs.appVersion }}" $exe.FullName --clobber
+
+      - name: Push installer to store-releases branch
+        if: steps.tauri.outputs.appVersion != ''
+        continue-on-error: true
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $version = "${{ steps.tauri.outputs.appVersion }}"
+          $nsisExe = Get-ChildItem -Path "src-tauri/target/release/bundle/nsis" -Filter "*setup.exe" -File | Select-Object -First 1
+          if (-not $nsisExe) {
+            $nsisExe = Get-ChildItem -Path "src-tauri/target/release/bundle/nsis" -Filter "*.exe" -File | Select-Object -First 1
+          }
+          if (-not $nsisExe) {
+            Write-Error "NSIS installer non trovato in bundle/nsis"
+            exit 1
+          }
+          Write-Host "Found installer: $($nsisExe.FullName)"
+
+          git clone --depth 1 --branch store-releases "https://x-access-token:$($env:GITHUB_TOKEN)@github.com/${{ github.repository }}.git" store_repo
+
+          $targetDir = "store_repo/v$version"
+          if (-not (Test-Path $targetDir)) {
+            New-Item -ItemType Directory -Force -Path $targetDir | Out-Null
+          }
+          Copy-Item -Path $nsisExe.FullName -Destination "$targetDir/$($nsisExe.Name)" -Force
+
+          Push-Location store_repo
+          try {
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add "v$version/$($nsisExe.Name)"
+            $status = git status --porcelain
+            if ($status) {
+              git commit -m "Store binary v$version [skip ci]"
+              git push origin store-releases
+              Write-Host "Pushed v$version to store-releases successfully!"
+            } else {
+              Write-Host "Installer for v$version already exists in store-releases."
+            }
+          } finally {
+            Pop-Location
+          }
+

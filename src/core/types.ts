@@ -59,6 +59,10 @@ export interface ProjectSettings {
   elementFonts?: Record<string, string>
   /** Auto-enclosing parentheses for parenthetical element. Defaults to true. */
   autoParentheses?: boolean
+  /** Automatic Character Continueds - automatically appends (CONT'D) when dialogue resumes after an action. Defaults to true. */
+  autoContinued?: boolean
+  /** Show page numbers in footer during PDF and DOCX export. Defaults to true. */
+  pageNumbers?: boolean
 }
 
 export const DEFAULT_LANGUAGE: Language = 'it'

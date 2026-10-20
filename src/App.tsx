@@ -58,6 +58,14 @@ export default function App() {
   }, [])
 
   useEffect(() => {
+    if (isTauri()) {
+      void import('@tauri-apps/api/window').then(({ getCurrentWindow }) => {
+        void getCurrentWindow().show()
+      })
+    }
+  }, [])
+
+  useEffect(() => {
     void useUpdater.getState().check(true)
   }, [])
 

@@ -45,6 +45,7 @@ const currentLang = () => useProject.getState().project?.settings.language ?? us
 
 function buildPlugins(mode: ProjectMode, schema: Schema): Plugin[] {
   const getAutoParen = () => useProject.getState().project?.settings.autoParentheses ?? true
+  const getAutoContinued = () => useProject.getState().project?.settings.autoContinued ?? true
   const plugins: Plugin[] = [history(), revisionPlugin(schema, () => useProject.getState().revisionActive)]
   plugins.push(keymap({ 'Mod-z': undo, 'Mod-y': redo, 'Mod-Shift-z': redo }))
   if (mode === 'screenplay') {
@@ -52,7 +53,7 @@ function buildPlugins(mode: ProjectMode, schema: Schema): Plugin[] {
     plugins.push(keymap(parentheticalKeymap(schema, getAutoParen)))
     plugins.push(parentheticalPlugin(schema, getAutoParen))
     plugins.push(keymap(tabKeymap(schema)))
-    plugins.push(keymap(enterKeymap(schema, getAutoParen)))
+    plugins.push(keymap(enterKeymap(schema, getAutoParen, getAutoContinued)))
     plugins.push(screenplayInputRules(schema))
     plugins.push(placeholderPlugin(() => elementPlaceholders(currentLang())))
   } else {

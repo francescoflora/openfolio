@@ -9,6 +9,7 @@ import { findNode, insertNode, moveNode, removeNode, sceneIds, updateNode } from
 import type { DropPosition } from '@/core/tree'
 import {
   addRecent,
+  loadDefaultAutoContinued,
   loadDefaultAutoParentheses,
   loadDefaultElementFonts,
   loadDefaultLanguage,
@@ -99,6 +100,8 @@ export function newProject(
       zoom: initialZoom(),
       elementFonts: loadDefaultElementFonts(mode),
       autoParentheses: opts.autoParentheses ?? (mode === 'screenplay' ? loadDefaultAutoParentheses() : true),
+      autoContinued: opts.autoContinued ?? (mode === 'screenplay' ? loadDefaultAutoContinued() : true),
+      pageNumbers: opts.pageNumbers ?? true,
       ...opts,
     },
     createdAt: now,
@@ -122,6 +125,8 @@ function normalizeProject(project: Project): Project {
       zoom: project.settings?.zoom ?? initialZoom(),
       elementFonts: project.settings?.elementFonts ?? {},
       autoParentheses: project.settings?.autoParentheses ?? true,
+      autoContinued: project.settings?.autoContinued ?? true,
+      pageNumbers: project.settings?.pageNumbers ?? true,
     },
   }
 }

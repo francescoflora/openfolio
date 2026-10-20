@@ -142,9 +142,6 @@ export function UpdateMenu() {
 
     return (
       <div className="flex flex-col gap-3">
-        <div className="flex items-center justify-between text-xs text-ink-soft">
-          <span>{t.updateCurrent(version)}</span>
-        </div>
 
         {status === 'none' && (
           <div className="flex items-center gap-1.5 rounded-md bg-emerald-500/10 px-2.5 py-1.5 text-xs text-emerald-700 dark:text-emerald-400">

@@ -131,4 +131,14 @@ describe('compile', () => {
     const sceneMatches = html.match(/class="scene script-page"/g)
     expect(sceneMatches?.length).toBe(2)
   })
+
+  it('includes footer page counter and title-page rules when compiled for print', () => {
+    const htmlPrint = compileHtml(project, scenes, true)
+    expect(htmlPrint).toContain('@bottom-center')
+    expect(htmlPrint).toContain('counter(page)')
+    expect(htmlPrint).toContain('@page title-page')
+
+    const htmlScreen = compileHtml(project, scenes, false)
+    expect(htmlScreen).not.toContain('@bottom-center')
+  })
 })

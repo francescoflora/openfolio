@@ -62,6 +62,7 @@ export interface NativePdfPayload {
   justify?: boolean
   indent?: boolean
   has_title_page?: boolean
+  page_numbers?: boolean
   page_size?: string
   scenes: SceneDoc[]
 }
