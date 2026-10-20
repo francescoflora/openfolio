@@ -156,9 +156,10 @@ export function WindowControls({ className }: WindowControlsProps) {
           className="w-[10px] h-[10px]"
           viewBox="0 0 10 10"
           fill="none"
-          style={{ shapeRendering: 'geometricPrecision' }}
         >
-          <path d="M1 1l8 8M9 1L1 9" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" />
+          <line x1="1" y1="1" x2="9" y2="9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+          <line x1="9" y1="1" x2="1" y2="9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+          <circle cx="5" cy="5" r="0.85" fill="currentColor" />
         </svg>
       </button>
     </div>

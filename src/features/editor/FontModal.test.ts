@@ -3,10 +3,13 @@ import { AVAILABLE_FONTS } from './FontModal'
 import { newProject } from '@/store/useProject'
 import { compileHtml } from '@/core/compile'
 import {
+  loadDefaultAutoContinued,
   loadDefaultAutoParentheses,
   loadDefaultElementFonts,
+  resetDefaultAutoContinued,
   resetDefaultAutoParentheses,
   resetDefaultElementFonts,
+  saveDefaultAutoContinued,
   saveDefaultAutoParentheses,
   saveDefaultElementFonts,
 } from '@/core/persistence'
@@ -111,6 +114,42 @@ describe('FontModal & Element Fonts', () => {
 
       const pReset = newProject('screenplay', 'Restored Auto Paren')
       expect(pReset.project.settings.autoParentheses).toBe(true)
+    } finally {
+      Object.defineProperty(globalThis, 'localStorage', { value: orig, configurable: true, writable: true })
+    }
+  })
+
+  it('manages autoContinued setting with true by default and respects persistence', () => {
+    // Default project has autoContinued === true
+    const p = newProject('screenplay', 'Auto Continued Test')
+    expect(p.project.settings.autoContinued).toBe(true)
+
+    const store = new Map<string, string>()
+    const mockStorage = {
+      getItem: (key: string) => store.get(key) ?? null,
+      setItem: (key: string, val: string) => store.set(key, String(val)),
+      removeItem: (key: string) => store.delete(key),
+      clear: () => store.clear(),
+      length: 0,
+      key: () => null,
+    }
+    const orig = globalThis.localStorage
+    Object.defineProperty(globalThis, 'localStorage', { value: mockStorage, configurable: true, writable: true })
+
+    try {
+      expect(loadDefaultAutoContinued()).toBe(true)
+
+      saveDefaultAutoContinued(false)
+      expect(loadDefaultAutoContinued()).toBe(false)
+
+      const pDisabled = newProject('screenplay', 'Disabled Auto Continued')
+      expect(pDisabled.project.settings.autoContinued).toBe(false)
+
+      resetDefaultAutoContinued()
+      expect(loadDefaultAutoContinued()).toBe(true)
+
+      const pReset = newProject('screenplay', 'Restored Auto Continued')
+      expect(pReset.project.settings.autoContinued).toBe(true)
     } finally {
       Object.defineProperty(globalThis, 'localStorage', { value: orig, configurable: true, writable: true })
     }

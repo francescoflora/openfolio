@@ -375,9 +375,72 @@ export function tabKeymap(schema: Schema) {
   }
 }
 
+/**
+ * Strips extensions like (O.S.), (V.O.), (CONT'D) to extract the pure speaker name.
+ */
+export function extractCharacterSpeaker(name: string): string {
+  return name
+    .replace(/\s*\(.*?\)/g, '')
+    .trim()
+    .toUpperCase()
+}
+
+/**
+ * Checks whether the current character block is a continuation of the same character's
+ * dialogue within the current scene, interrupted by action/shot/transition.
+ */
+export function shouldAppendContinued(state: EditorState, currentText: string): boolean {
+  const text = currentText.trim()
+  if (!text) return false
+  // If it already has (CONT'D) or (CONTINUED), don't append another one
+  if (/\((?:CONT'D|CONTINUED)\)/i.test(text)) return false
+
+  const currentSpeaker = extractCharacterSpeaker(text)
+  if (!currentSpeaker) return false
+
+  const { $from } = state.selection
+  const currentIndex = $from.index(0)
+  if (currentIndex <= 0) return false
+
+  let hasInterruption = false
+
+  for (let i = currentIndex - 1; i >= 0; i--) {
+    const node = state.doc.child(i)
+    const nodeType = node.type.name
+
+    // Continueds never span across scene headings (new scene = new beat)
+    if (nodeType === 'scene_heading') {
+      return false
+    }
+
+    if (nodeType === 'character') {
+      const prevSpeaker = extractCharacterSpeaker(node.textContent)
+      // If the previous character who spoke in this scene is the same character,
+      // and there was an intervening interruption (action, shot, transition, etc.):
+      if (prevSpeaker === currentSpeaker && hasInterruption) {
+        return true
+      }
+      // If it's a different character, or no interruption occurred, stop searching
+      return false
+    }
+
+    // Any block that is NOT dialogue and NOT parenthetical counts as an interruption
+    if (nodeType !== 'dialogue' && nodeType !== 'parenthetical') {
+      hasInterruption = true
+    }
+  }
+
+  return false
+}
+
 /** Enter moves forward through the screenplay flow with a fresh block. */
-export function enterKeymap(schema: Schema, getAutoParentheses?: () => boolean) {
+export function enterKeymap(
+  schema: Schema,
+  getAutoParentheses?: () => boolean,
+  getAutoContinued?: () => boolean,
+) {
   const isAuto = () => (getAutoParentheses ? getAutoParentheses() : true)
+  const isAutoCont = () => (getAutoContinued ? getAutoContinued() : true)
 
   return {
     Enter: (state: EditorState, dispatch?: (tr: Transaction) => void) => {
@@ -437,6 +500,32 @@ export function enterKeymap(schema: Schema, getAutoParentheses?: () => boolean) 
         }
 
         const endPos = blockStart + formatted.length
+        tr = tr.split(endPos, 1, [{ type: dialogueType }])
+        tr = tr.setSelection(TextSelection.create(tr.doc, endPos + 2))
+        if (dispatch) dispatch(tr.scrollIntoView())
+        return true
+      }
+
+      // If character: if autoContinued is enabled and character is continued, append (CONT'D) before splitting to dialogue
+      if (type === 'character') {
+        const dialogueType = schema.nodes.dialogue as NodeType | undefined
+        if (!dialogueType) return false
+
+        const { $from } = state.selection
+        const blockStart = $from.start()
+        const blockEnd = $from.end()
+        let tr = state.tr
+
+        let finalCharText = text.trim()
+        if (isAutoCont() && shouldAppendContinued(state, text)) {
+          finalCharText = `${finalCharText} (CONT'D)`
+        }
+
+        if (text !== finalCharText) {
+          tr = tr.delete(blockStart, blockEnd).insertText(finalCharText, blockStart)
+        }
+
+        const endPos = blockStart + finalCharText.length
         tr = tr.split(endPos, 1, [{ type: dialogueType }])
         tr = tr.setSelection(TextSelection.create(tr.doc, endPos + 2))
         if (dispatch) dispatch(tr.scrollIntoView())

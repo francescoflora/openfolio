@@ -3,7 +3,16 @@ import { EditorState, TextSelection } from 'prosemirror-state'
 import type { Transaction } from 'prosemirror-state'
 import type { JSONContent } from '@/core/json'
 import { screenplaySchema } from '@/core/schema/screenplay'
-import { enterKeymap, hardBreakKeymap, parentheticalKeymap, parentheticalPlugin, placeholderPlugin, tabKeymap } from './screenplayPlugins'
+import {
+  enterKeymap,
+  extractCharacterSpeaker,
+  hardBreakKeymap,
+  parentheticalKeymap,
+  parentheticalPlugin,
+  placeholderPlugin,
+  shouldAppendContinued,
+  tabKeymap,
+} from './screenplayPlugins'
 import type { EditorView } from 'prosemirror-view'
 
 function stateOf(content: JSONContent[]): EditorState {
@@ -338,4 +347,129 @@ describe('parentheticalPlugin', () => {
     expect(next.doc.child(1).textContent).toBe('')
   })
 })
+
+describe('Automatic Character Continueds (CONT\'D)', () => {
+  it('extracts base character speaker name stripping extensions and (CONT\'D)', () => {
+    expect(extractCharacterSpeaker('MARCO')).toBe('MARCO')
+    expect(extractCharacterSpeaker("MARCO (CONT'D)")).toBe('MARCO')
+    expect(extractCharacterSpeaker('MARCO (CONTINUED)')).toBe('MARCO')
+    expect(extractCharacterSpeaker('MARCO (O.S.)')).toBe('MARCO')
+    expect(extractCharacterSpeaker("MARCO (V.O.) (CONT'D)")).toBe('MARCO')
+    expect(extractCharacterSpeaker('DON VITO CORLEONE')).toBe('DON VITO CORLEONE')
+  })
+
+  it('detects when a character should have (CONT\'D) after intervening action', () => {
+    const doc = blocks(
+      ['scene_heading', 'INT. STANZA - GIORNO'],
+      ['character', 'MARCO'],
+      ['dialogue', 'Non posso crederci.'],
+      ['action', 'Marco si alza e guarda fuori dalla finestra.'],
+      ['character', 'MARCO'],
+    )
+    const s = stateOf(doc)
+    const state = at(s, s.doc.content.size - 1)
+    expect(shouldAppendContinued(state, 'MARCO')).toBe(true)
+  })
+
+  it('does NOT add (CONT\'D) if another character spoke in between', () => {
+    const doc = blocks(
+      ['scene_heading', 'INT. STANZA - GIORNO'],
+      ['character', 'MARCO'],
+      ['dialogue', 'Non posso crederci.'],
+      ['character', 'GIULIA'],
+      ['dialogue', 'Perché no?'],
+      ['action', 'Marco si alza e guarda fuori dalla finestra.'],
+      ['character', 'MARCO'],
+    )
+    const s = stateOf(doc)
+    const state = at(s, s.doc.content.size - 1)
+    expect(shouldAppendContinued(state, 'MARCO')).toBe(false)
+  })
+
+  it('does NOT add (CONT\'D) if no action/interruption occurred', () => {
+    const doc = blocks(
+      ['scene_heading', 'INT. STANZA - GIORNO'],
+      ['character', 'MARCO'],
+      ['dialogue', 'Non posso crederci.'],
+      ['character', 'MARCO'],
+    )
+    const s = stateOf(doc)
+    const state = at(s, s.doc.content.size - 1)
+    expect(shouldAppendContinued(state, 'MARCO')).toBe(false)
+  })
+
+  it('does NOT add (CONT\'D) across a scene heading', () => {
+    const doc = blocks(
+      ['scene_heading', 'INT. STANZA - GIORNO'],
+      ['character', 'MARCO'],
+      ['dialogue', 'Non posso crederci.'],
+      ['action', 'Marco esce.'],
+      ['scene_heading', 'EXT. STRADA - GIORNO'],
+      ['action', 'Piove a dirotto.'],
+      ['character', 'MARCO'],
+    )
+    const s = stateOf(doc)
+    const state = at(s, s.doc.content.size - 1)
+    expect(shouldAppendContinued(state, 'MARCO')).toBe(false)
+  })
+
+  it('does NOT add (CONT\'D) if already present', () => {
+    const doc = blocks(
+      ['character', 'MARCO'],
+      ['dialogue', 'Ciao.'],
+      ['action', 'Pausa.'],
+      ['character', "MARCO (CONT'D)"],
+    )
+    const s = stateOf(doc)
+    const state = at(s, s.doc.content.size - 1)
+    expect(shouldAppendContinued(state, "MARCO (CONT'D)")).toBe(false)
+  })
+
+  it('appends (CONT\'D) on Enter when autoContinued is active (default)', () => {
+    const doc = blocks(
+      ['scene_heading', 'INT. STANZA - GIORNO'],
+      ['character', 'MARCO'],
+      ['dialogue', 'Non posso crederci.'],
+      ['action', 'Marco si alza e guarda fuori dalla finestra.'],
+      ['character', 'MARCO'],
+    )
+    const s = stateOf(doc)
+    const state = at(s, s.doc.content.size - 1)
+    const binding = enterKeymap(screenplaySchema).Enter
+    let next = state
+    binding(state, (tr: Transaction) => {
+      next = next.apply(tr)
+    })
+
+    expect(next.doc.childCount).toBe(6)
+    expect(next.doc.child(4).type.name).toBe('character')
+    expect(next.doc.child(4).textContent).toBe("MARCO (CONT'D)")
+    expect(next.doc.child(5).type.name).toBe('dialogue')
+    expect(next.doc.child(5).textContent).toBe('')
+  })
+
+  it('does NOT append (CONT\'D) on Enter when autoContinued is false', () => {
+    const doc = blocks(
+      ['scene_heading', 'INT. STANZA - GIORNO'],
+      ['character', 'MARCO'],
+      ['dialogue', 'Non posso crederci.'],
+      ['action', 'Marco si alza e guarda fuori dalla finestra.'],
+      ['character', 'MARCO'],
+    )
+    const s = stateOf(doc)
+    const state = at(s, s.doc.content.size - 1)
+    // Pass getAutoContinued returning false
+    const binding = enterKeymap(screenplaySchema, () => true, () => false).Enter
+    let next = state
+    binding(state, (tr: Transaction) => {
+      next = next.apply(tr)
+    })
+
+    expect(next.doc.childCount).toBe(6)
+    expect(next.doc.child(4).type.name).toBe('character')
+    expect(next.doc.child(4).textContent).toBe('MARCO')
+    expect(next.doc.child(5).type.name).toBe('dialogue')
+  })
+})
+
 

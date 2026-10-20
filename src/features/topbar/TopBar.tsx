@@ -1,13 +1,38 @@
 import { useState } from 'react'
-import { BookOpen, Check, ChevronDown, Download, FilePlus2, FileUp, FolderOpen, Info, Moon, Save, Sun, X } from 'lucide-react'
+import {
+  BookOpen,
+  Check,
+  ChevronDown,
+  ChevronRight,
+  Clapperboard,
+  Clock,
+  Download,
+  FilePlus2,
+  FileText,
+  FileUp,
+  FolderOpen,
+  Hash,
+  Info,
+  MessageSquareText,
+  Moon,
+  Save,
+  Sun,
+  Trash2,
+  Type,
+  X,
+} from 'lucide-react'
 import { useProject } from '@/store/useProject'
 import { EXPORT_LABEL, FORMATS_BY_MODE, runExport } from '@/features/export/actions'
 import { TEMPLATES, templateOpts } from '@/core/templates'
 import { uiText } from '@/core/i18n'
+import { listRecent, clearRecents } from '@/core/persistence'
+import type { RecentProject } from '@/core/persistence'
 import { LanguageMenu } from '@/features/topbar/LanguageMenu'
 import { TitlePageModal } from '@/features/topbar/TitlePageModal'
 import { UpdateMenu } from '@/features/topbar/UpdateMenu'
 import { AboutModal } from '@/features/topbar/AboutModal'
+import { MoresContinuedsModal } from '@/features/topbar/MoresContinuedsModal'
+import { FontModal } from '@/features/editor/FontModal'
 import { WindowControls } from '@/features/topbar/WindowControls'
 import { toggleWindowMaximize } from '@/core/windowSize'
 import { APP_NAME } from '@/core/appinfo'
@@ -24,14 +49,21 @@ export function TopBar() {
   const theme = useProject((s) => s.theme)
   const newProject = useProject((s) => s.newProject)
   const openProject = useProject((s) => s.openProject)
+  const openRecentProject = useProject((s) => s.openRecentProject)
   const importProject = useProject((s) => s.importProject)
-  const closeProject = useProject((s) => s.closeProject)
   const save = useProject((s) => s.save)
   const setTheme = useProject((s) => s.setTheme)
+  const updateSettings = useProject((s) => s.updateSettings)
+  const pageNumbers = useProject((s) => s.project?.settings.pageNumbers !== false)
   const [menu, setMenu] = useState(false)
   const [openMenu, setOpenMenu] = useState(false)
+  const [recentsOpen, setRecentsOpen] = useState(false)
+  const [recents, setRecents] = useState<RecentProject[]>([])
   const [saveMenu, setSaveMenu] = useState(false)
+  const [docMenu, setDocMenu] = useState(false)
   const [bookOpen, setBookOpen] = useState(false)
+  const [moresOpen, setMoresOpen] = useState(false)
+  const [fontModalOpen, setFontModalOpen] = useState(false)
   const [aboutOpen, setAboutOpen] = useState(false)
 
   const t = uiText(lang)
@@ -55,7 +87,7 @@ export function TopBar() {
           <img
             src={logo}
             alt={APP_NAME}
-            className="h-6 w-6 drop-shadow-sm"
+            className="h-4 w-4 drop-shadow-sm"
           />
         </div>
 
@@ -123,7 +155,16 @@ export function TopBar() {
                 openMenu && 'border-border bg-surface-2 text-ink',
               )}
               title={t.moreOpenOptions}
-              onClick={() => setOpenMenu((m) => !m)}
+              onClick={() => {
+                setOpenMenu((m) => {
+                  const next = !m
+                  if (next) {
+                    setRecents(listRecent())
+                    setRecentsOpen(false)
+                  }
+                  return next
+                })
+              }}
             >
               <ChevronDown className={cn('h-3.5 w-3.5 transition-transform duration-150', openMenu && 'rotate-180')} />
             </button>
@@ -131,17 +172,105 @@ export function TopBar() {
 
           {openMenu && (
             <>
-              <div className="fixed inset-0 z-10" onClick={() => setOpenMenu(false)} />
-              <div className="absolute left-0 top-9 z-20 w-72 overflow-hidden rounded-lg border border-border bg-surface py-1 shadow-lg">
+              <div
+                className="fixed inset-0 z-10"
+                onClick={() => {
+                  setOpenMenu(false)
+                  setRecentsOpen(false)
+                }}
+              />
+              <div className="absolute left-0 top-9 z-20 w-72 rounded-lg border border-border bg-surface py-1 shadow-lg">
                 <button
-                  className="block w-full px-3 py-2 text-left text-sm text-ink-soft hover:bg-surface-2 cursor-pointer"
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-ink-soft hover:bg-surface-2 hover:text-ink transition-colors cursor-pointer"
                   onClick={() => {
                     setOpenMenu(false)
+                    setRecentsOpen(false)
                     void openProject()
                   }}
                 >
-                  {t.openProjectBtn}
+                  <FolderOpen className="h-4 w-4 text-ink-faint shrink-0" />
+                  <span>{t.openProjectBtn}</span>
                 </button>
+
+                {/* Voce Recenti con sottomenu flyout */}
+                <div
+                  className="relative"
+                  onMouseEnter={() => setRecentsOpen(true)}
+                  onMouseLeave={() => setRecentsOpen(false)}
+                >
+                  <button
+                    type="button"
+                    className={cn(
+                      'flex w-full items-center justify-between px-3 py-2 text-left text-sm text-ink-soft hover:bg-surface-2 hover:text-ink transition-colors cursor-pointer',
+                      recentsOpen && 'bg-surface-2 text-ink',
+                    )}
+                    onClick={() => setRecentsOpen((v) => !v)}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-ink-faint shrink-0" />
+                      <span>{t.openRecentMenu}</span>
+                    </div>
+                    <ChevronRight className="h-3.5 w-3.5 text-ink-faint shrink-0" />
+                  </button>
+
+                  {recentsOpen && (
+                    <div
+                      className="absolute left-full top-0 -ml-0.5 w-80 rounded-lg border border-border bg-surface py-1 shadow-xl z-30 before:absolute before:-left-2 before:top-0 before:w-2 before:h-full"
+                      data-tauri-drag-region="false"
+                    >
+                      {recents.length > 0 ? (
+                        <>
+                          <div className="max-h-72 overflow-y-auto py-0.5">
+                            {recents.map((r) => (
+                              <button
+                                key={r.path}
+                                className="group flex w-full items-center gap-2.5 px-3 py-1.5 text-left text-xs text-ink-soft hover:bg-surface-2 hover:text-ink transition-colors cursor-pointer"
+                                onClick={() => {
+                                  setOpenMenu(false)
+                                  setRecentsOpen(false)
+                                  void openRecentProject(r.path)
+                                }}
+                                title={r.path}
+                              >
+                                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded border border-border/70 bg-surface-2 text-ink-muted group-hover:text-accent group-hover:border-accent/40 transition-colors">
+                                  {r.mode === 'screenplay' ? (
+                                    <Clapperboard className="h-3 w-3" />
+                                  ) : (
+                                    <BookOpen className="h-3 w-3" />
+                                  )}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <div className="truncate font-medium text-ink group-hover:text-accent transition-colors">
+                                    {r.title || 'Senza titolo'}
+                                  </div>
+                                  <div className="truncate text-[10px] text-ink-faint" title={r.path}>
+                                    {r.path}
+                                  </div>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                          <div className="my-1 border-t border-border" />
+                          <button
+                            className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs text-ink-faint hover:text-red-500 hover:bg-surface-2 transition-colors cursor-pointer"
+                            onClick={() => {
+                              clearRecents()
+                              setRecents([])
+                            }}
+                          >
+                            <Trash2 className="h-3.5 w-3.5 shrink-0" />
+                            <span>{t.clearRecentsMenu}</span>
+                          </button>
+                        </>
+                      ) : (
+                        <div className="px-4 py-3 text-center text-xs text-ink-faint">
+                          {t.noRecentsLabel}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 <div className="my-1 border-t border-border" />
                 <div className="flex items-center gap-1.5 px-3 pb-0.5 pt-1 text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
                   <FileUp className="h-3.5 w-3.5" /> {t.importHeader}
@@ -150,6 +279,7 @@ export function TopBar() {
                   className="block w-full px-3 py-2 text-left text-sm text-ink-soft hover:bg-surface-2 cursor-pointer"
                   onClick={() => {
                     setOpenMenu(false)
+                    setRecentsOpen(false)
                     void importProject('fountain')
                   }}
                 >
@@ -159,6 +289,7 @@ export function TopBar() {
                   className="block w-full px-3 py-2 text-left text-sm text-ink-soft hover:bg-surface-2 cursor-pointer"
                   onClick={() => {
                     setOpenMenu(false)
+                    setRecentsOpen(false)
                     void importProject('fdx')
                   }}
                 >
@@ -168,20 +299,11 @@ export function TopBar() {
                   className="block w-full px-3 py-2 text-left text-sm text-ink-soft hover:bg-surface-2 cursor-pointer"
                   onClick={() => {
                     setOpenMenu(false)
+                    setRecentsOpen(false)
                     void importProject('txt')
                   }}
                 >
                   {t.importTxtMenu}
-                </button>
-                <div className="my-1 border-t border-border" />
-                <button
-                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-ink-soft hover:bg-surface-2 hover:text-amber-600 dark:hover:text-amber-400 cursor-pointer"
-                  onClick={() => {
-                    setOpenMenu(false)
-                    closeProject()
-                  }}
-                >
-                  <X className="h-4 w-4 text-ink-faint" /> {t.closeProjectMenu}
                 </button>
               </div>
             </>
@@ -259,6 +381,81 @@ export function TopBar() {
             </>
           )}
         </div>
+
+        {/* Menu Documento */}
+        <div className="relative shrink-0">
+          <button
+            className={cn(
+              'flex h-7 items-center gap-1.5 rounded-md border border-transparent px-2 text-sm text-ink-soft transition-colors cursor-pointer',
+              'hover:border-border hover:bg-surface-2 hover:text-ink hover:shadow-2xs',
+              docMenu && 'border-border bg-surface-2 text-ink shadow-2xs',
+            )}
+            title={t.documentMenu}
+            onClick={() => setDocMenu((m) => !m)}
+          >
+            <FileText className="h-4 w-4" />
+            <span className="hidden xl:inline">{t.documentMenu}</span>
+            <ChevronDown className={cn('h-3.5 w-3.5 transition-transform duration-150', docMenu && 'rotate-180')} />
+          </button>
+
+          {docMenu && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setDocMenu(false)} />
+              <div className="absolute left-0 top-9 z-20 w-64 overflow-hidden rounded-lg border border-border bg-surface py-1 shadow-lg">
+                <button
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-ink-soft hover:bg-surface-2 hover:text-ink transition-colors cursor-pointer"
+                  onClick={() => {
+                    setDocMenu(false)
+                    setBookOpen(true)
+                  }}
+                >
+                  <BookOpen className="h-4 w-4 text-ink-faint shrink-0" />
+                  <span>{t.titlePageBtn}</span>
+                </button>
+
+                {mode === 'screenplay' && (
+                  <button
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-ink-soft hover:bg-surface-2 hover:text-ink transition-colors cursor-pointer"
+                    onClick={() => {
+                      setDocMenu(false)
+                      setMoresOpen(true)
+                    }}
+                  >
+                    <MessageSquareText className="h-4 w-4 text-ink-faint shrink-0" />
+                    <span>{t.moresMenu}</span>
+                  </button>
+                )}
+
+                <button
+                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-ink-soft hover:bg-surface-2 hover:text-ink transition-colors cursor-pointer"
+                  onClick={() => {
+                    setDocMenu(false)
+                    setFontModalOpen(true)
+                  }}
+                >
+                  <Type className="h-4 w-4 text-ink-faint shrink-0" />
+                  <span>{t.elementFontsMenu}</span>
+                </button>
+
+                <div className="my-1 border-t border-border" />
+
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-between px-3 py-2 text-left text-sm text-ink-soft hover:bg-surface-2 hover:text-ink transition-colors cursor-pointer"
+                  onClick={() => {
+                    updateSettings({ pageNumbers: !pageNumbers })
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    <Hash className="h-4 w-4 text-ink-faint shrink-0" />
+                    <span>{t.pageNumbersMenu}</span>
+                  </div>
+                  {pageNumbers && <Check className="h-4 w-4 text-accent shrink-0" />}
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Drag region centrale */}
@@ -322,6 +519,14 @@ export function TopBar() {
 
       {bookOpen && <TitlePageModal onClose={() => setBookOpen(false)} />}
       {aboutOpen && <AboutModal onClose={() => setAboutOpen(false)} />}
+      {moresOpen && <MoresContinuedsModal onClose={() => setMoresOpen(false)} />}
+      {fontModalOpen && mode && (
+        <FontModal
+          isOpen={fontModalOpen}
+          mode={mode}
+          onClose={() => setFontModalOpen(false)}
+        />
+      )}
     </header>
   )
 }

@@ -19,6 +19,7 @@
     "core:window:allow-set-decorations",
     "core:window:allow-set-skip-taskbar",
     "core:window:allow-set-fullscreen",
+    "core:window:allow-show",
     "dialog:default",
     "updater:default",
     "process:allow-restart",

@@ -2,10 +2,13 @@ import { useEffect, useState } from 'react'
 import { RotateCcw, Type, X } from 'lucide-react'
 import { useProject } from '@/store/useProject'
 import {
+  loadDefaultAutoContinued,
   loadDefaultAutoParentheses,
   loadDefaultElementFonts,
+  resetDefaultAutoContinued,
   resetDefaultAutoParentheses,
   resetDefaultElementFonts,
+  saveDefaultAutoContinued,
   saveDefaultAutoParentheses,
   saveDefaultElementFonts,
 } from '@/core/persistence'
@@ -162,6 +165,7 @@ export function FontModal({
   const elLabels = elementLabels(lang)
   const elementFonts = project.settings.elementFonts ?? {}
   const autoParentheses = project.settings.autoParentheses ?? true
+  const autoContinued = project.settings.autoContinued ?? true
   const elements = mode === 'screenplay' ? SCREENPLAY_ELEMENTS_DEF : NOVEL_ELEMENTS_DEF
   const novelLabels: Record<string, string> =
     lang === 'en'
@@ -188,16 +192,23 @@ export function FontModal({
     setResetNotice(false)
   }
 
+  const handleToggleAutoContinued = (enabled: boolean) => {
+    updateSettings({ autoContinued: enabled })
+    saveDefaultAutoContinued(enabled)
+    setResetNotice(false)
+  }
+
   const handleResetSoftwareDefaults = () => {
     const next = { ...elementFonts }
     for (const el of elements) {
       delete next[el.id]
     }
     // Ripristina ai valori predefiniti del software per il progetto
-    updateSettings({ elementFonts: next, autoParentheses: true })
+    updateSettings({ elementFonts: next, autoParentheses: true, autoContinued: true })
     // Ripristina i valori predefiniti del software per lo strumento (localStorage)
     resetDefaultElementFonts(mode)
     resetDefaultAutoParentheses()
+    resetDefaultAutoContinued()
     setResetNotice(true)
     setTimeout(() => setResetNotice(false), 2500)
   }
@@ -205,7 +216,11 @@ export function FontModal({
   const hasCustomSettings =
     elements.some((el) => Boolean(elementFonts[el.id])) ||
     Object.keys(loadDefaultElementFonts(mode)).length > 0 ||
-    (mode === 'screenplay' && (!autoParentheses || !loadDefaultAutoParentheses()))
+    (mode === 'screenplay' &&
+      (!autoParentheses ||
+        !loadDefaultAutoParentheses() ||
+        !autoContinued ||
+        !loadDefaultAutoContinued()))
 
   return (
     <div
@@ -294,6 +309,28 @@ export function FontModal({
                   </div>
                 </div>
 
+                {/* Opzione (CONT'D) automatico per il personaggio */}
+                {el.id === 'character' && (
+                  <div className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-surface/80 px-3 py-2 border border-border/60">
+                    <label
+                      htmlFor="auto-continued-checkbox"
+                      className="flex items-center gap-2.5 text-xs text-ink cursor-pointer select-none"
+                    >
+                      <input
+                        id="auto-continued-checkbox"
+                        type="checkbox"
+                        checked={autoContinued}
+                        onChange={(e) => handleToggleAutoContinued(e.target.checked)}
+                        className="h-4 w-4 rounded border-border text-accent focus:ring-accent cursor-pointer accent-accent"
+                      />
+                      <span className="font-medium">{t.autoContinuedLabel}</span>
+                    </label>
+                    <span className="text-[11px] font-medium text-ink-muted">
+                      {autoContinued ? t.autoContinuedActive : t.autoContinuedInactive}
+                    </span>
+                  </div>
+                )}
+
                 {/* Opzione parentesi automatiche per la parentetica */}
                 {el.id === 'parenthetical' && (
                   <div className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-surface/80 px-3 py-2 border border-border/60">
@@ -329,6 +366,8 @@ export function FontModal({
                 >
                   {el.id === 'parenthetical'
                     ? (autoParentheses ? '(sottovoce, indicando la porta)' : 'sottovoce, indicando la porta')
+                    : el.id === 'character'
+                    ? (autoContinued ? "MARCO (CONT'D)" : 'MARCO')
                     : el.sample}
                 </div>
               </div>

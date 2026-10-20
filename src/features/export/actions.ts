@@ -1,9 +1,9 @@
 import { useProject } from '@/store/useProject'
 import { saveExport } from '@/core/fileio'
 import { compileMarkdown, compileText, compileUnits } from '@/core/compile'
-import { hasCustomTitle, slug } from '@/core/stats'
+import { slug } from '@/core/stats'
 import type { BinderNode, Project } from '@/core/types'
-import type { JSONContent, SceneDoc } from '@/core/json'
+import type { SceneDoc } from '@/core/json'
 import { nativeExportFdx, nativeExportFountain, nativeExportPdf } from '@/core/native'
 import { uiText } from '@/core/i18n'
 
@@ -43,35 +43,38 @@ function orderedDocs(): SceneDoc[] {
 function compileExportDocs(project: Project, scenes: Record<string, SceneDoc>): SceneDoc[] {
   const units = compileUnits(project, scenes)
   const docs: SceneDoc[] = []
-  let pendingHeadings: JSONContent[] = []
   const isNovel = project.mode === 'novel'
 
   for (const u of units) {
     if (u.kind === 'heading') {
-      const elType = isNovel ? 'heading' : 'section_heading'
-      pendingHeadings.push({
-        type: elType,
-        attrs: isNovel ? { level: Math.min(u.level + 1, 3) } : undefined,
-        content: [{ type: 'text', text: u.text }],
-      })
-    } else {
-      if (pendingHeadings.length > 0) {
+      if (isNovel) {
+        // In novel mode, part headings are placed on their own single page
         docs.push({
-          ...u.doc,
-          content: [...pendingHeadings, ...u.doc.content],
+          type: 'doc',
+          content: [
+            {
+              type: 'part_heading',
+              attrs: { level: u.level + 1, is_part: true },
+              content: [{ type: 'text', text: u.text }],
+            },
+          ],
         })
-        pendingHeadings = []
       } else {
-        docs.push(u.doc)
+        // In screenplay mode, section headings (e.g. Act breaks) are placed on their own single page
+        docs.push({
+          type: 'doc',
+          content: [
+            {
+              type: 'section_heading',
+              attrs: { level: u.level + 1, is_section: true },
+              content: [{ type: 'text', text: u.text }],
+            },
+          ],
+        })
       }
+    } else {
+      docs.push(u.doc)
     }
-  }
-
-  if (pendingHeadings.length > 0) {
-    docs.push({
-      type: 'doc',
-      content: pendingHeadings,
-    })
   }
 
   return docs
@@ -125,26 +128,31 @@ export async function runExport(format: ExportFormat): Promise<boolean> {
           project.settings.fontFamily ||
           (project.mode === 'screenplay' ? 'Courier Prime' : 'EB Garamond')
 
-        const hasTitlePage = Boolean(
-          project.settings.titlePage?.title ||
-          project.settings.titlePage?.author ||
-          project.settings.titlePage?.contact ||
-          project.settings.author ||
-          project.author ||
-          hasCustomTitle(project.title),
-        )
+        const hasTitlePage = (project.settings.titlePage as any)?.disabled !== true
+
+        const titleText =
+          project.settings.titlePage?.title?.trim() ||
+          project.title.trim() ||
+          (project.settings.language === 'en' ? 'Untitled' : 'Senza titolo')
+        const authorText =
+          project.settings.titlePage?.author?.trim() ||
+          project.settings.author?.trim() ||
+          project.author?.trim() ||
+          ''
+        const contactText = project.settings.titlePage?.contact?.trim() || ''
 
         const pdfBytes = await nativeExportPdf({
-          title: project.settings.titlePage?.title?.trim() || project.title.trim(),
+          title: titleText,
           mode: project.mode,
-          author: project.settings.titlePage?.author?.trim() || project.settings.author?.trim() || project.author?.trim(),
-          contact: project.settings.titlePage?.contact?.trim(),
+          author: authorText || undefined,
+          contact: contactText || undefined,
           language: project.settings.language,
           font_family: fontFamily,
           font_size_pt: project.settings.fontSizePt,
           justify: project.settings.justify,
           indent: project.settings.indent,
           has_title_page: hasTitlePage,
+          page_numbers: project.settings.pageNumbers !== false,
           page_size: 'letter',
           scenes: compileExportDocs(project, scenes),
         })

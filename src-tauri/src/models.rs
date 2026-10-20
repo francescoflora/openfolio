@@ -70,6 +70,8 @@ pub struct PdfExportPayload {
     #[serde(default)]
     pub has_title_page: Option<bool>,
     #[serde(default)]
+    pub page_numbers: Option<bool>,
+    #[serde(default)]
     pub scenes: Vec<SceneDoc>,
 }
 

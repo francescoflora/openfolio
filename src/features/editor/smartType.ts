@@ -98,8 +98,12 @@ function extractFromScene(doc: SceneDoc): Record<SuggestionKind, string[]> {
     if (node.type === 'character' || node.type === 'scene_heading') {
       const text = (node.content ?? []).map((c) => c.text ?? '').join('').trim()
       if (text) {
-        if (node.type === 'character') chars.push(text.toUpperCase())
-        else headings.push(text.toUpperCase())
+        if (node.type === 'character') {
+          const clean = text.replace(/\s*\((?:CONT'D|CONTINUED)\)/gi, '').trim().toUpperCase()
+          if (clean) chars.push(clean)
+        } else {
+          headings.push(text.toUpperCase())
+        }
       }
     }
     node.content?.forEach(walk)
