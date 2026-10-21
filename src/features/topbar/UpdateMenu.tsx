@@ -23,6 +23,9 @@ export function UpdateMenu() {
   const [saving, setSaving] = useState(false)
   const [version, setVersion] = useState('…')
   const lang = useProject((s) => s.language)
+  const hasProject = useProject((s) => s.project !== null)
+  const dirty = useProject((s) => s.dirty)
+  const hasUnsavedChanges = hasProject && dirty
   const t = uiText(lang)
   const { status, version: newVersion, progress, error, check, install } = useUpdater()
 
@@ -226,8 +229,19 @@ export function UpdateMenu() {
           >
             <div className="mb-4 flex items-start justify-between gap-3">
               <div className="flex items-start gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 shrink-0">
-                  <AlertTriangle className="h-5 w-5" />
+                <div
+                  className={cn(
+                    'flex h-10 w-10 items-center justify-center rounded-xl shrink-0',
+                    hasUnsavedChanges
+                      ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
+                      : 'bg-accent/15 text-accent',
+                  )}
+                >
+                  {hasUnsavedChanges ? (
+                    <AlertTriangle className="h-5 w-5" />
+                  ) : (
+                    <Download className="h-5 w-5" />
+                  )}
                 </div>
                 <div className="min-w-0 flex-1">
                   <h3 className="text-sm font-semibold text-ink">{t.updateConfirmTitle}</h3>
@@ -245,33 +259,52 @@ export function UpdateMenu() {
               </button>
             </div>
 
-            <div className="mt-5 flex flex-col gap-2">
-              <button
-                className="flex w-full items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2.5 text-xs font-semibold text-accent-ink hover:opacity-90 shadow-2xs transition-all cursor-pointer disabled:opacity-50"
-                disabled={saving}
-                onClick={() => void handleSaveAndProceed()}
-              >
-                {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-                {t.updateConfirmSaveAndProceed}
-              </button>
+            {hasUnsavedChanges ? (
+              <div className="mt-5 flex flex-col gap-2">
+                <button
+                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2.5 text-xs font-semibold text-accent-ink hover:opacity-90 shadow-2xs transition-all cursor-pointer disabled:opacity-50"
+                  disabled={saving}
+                  onClick={() => void handleSaveAndProceed()}
+                >
+                  {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                  {t.updateConfirmSaveAndProceed}
+                </button>
 
-              <button
-                className="flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-surface px-4 py-2 text-xs font-medium text-ink-soft hover:bg-surface-2 hover:text-ink transition-colors cursor-pointer disabled:opacity-50"
-                disabled={saving}
-                onClick={handleProceedWithoutSaving}
-              >
-                <ArrowRight className="h-3.5 w-3.5" />
-                {t.updateConfirmProceedWithoutSaving}
-              </button>
+                <button
+                  className="flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-surface px-4 py-2 text-xs font-medium text-ink-soft hover:bg-surface-2 hover:text-ink transition-colors cursor-pointer disabled:opacity-50"
+                  disabled={saving}
+                  onClick={handleProceedWithoutSaving}
+                >
+                  <ArrowRight className="h-3.5 w-3.5" />
+                  {t.updateConfirmProceedWithoutSaving}
+                </button>
 
-              <button
-                className="flex w-full items-center justify-center rounded-lg px-3 py-1.5 text-xs font-medium text-ink-faint hover:text-ink transition-colors cursor-pointer"
-                disabled={saving}
-                onClick={() => setShowConfirm(false)}
-              >
-                {t.updateConfirmCancel}
-              </button>
-            </div>
+                <button
+                  className="flex w-full items-center justify-center rounded-lg px-3 py-1.5 text-xs font-medium text-ink-faint hover:text-ink transition-colors cursor-pointer"
+                  disabled={saving}
+                  onClick={() => setShowConfirm(false)}
+                >
+                  {t.updateConfirmCancel}
+                </button>
+              </div>
+            ) : (
+              <div className="mt-5 flex flex-col gap-2">
+                <button
+                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2.5 text-xs font-semibold text-accent-ink hover:opacity-90 shadow-2xs transition-all cursor-pointer"
+                  onClick={handleProceedWithoutSaving}
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  {t.updateConfirmProceed}
+                </button>
+
+                <button
+                  className="flex w-full items-center justify-center rounded-lg px-3 py-1.5 text-xs font-medium text-ink-faint hover:text-ink transition-colors cursor-pointer"
+                  onClick={() => setShowConfirm(false)}
+                >
+                  {t.updateConfirmCancel}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
