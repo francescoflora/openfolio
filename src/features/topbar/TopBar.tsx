@@ -58,8 +58,10 @@ export function TopBar() {
   const [menu, setMenu] = useState(false)
   const [openMenu, setOpenMenu] = useState(false)
   const [recentsOpen, setRecentsOpen] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
   const [recents, setRecents] = useState<RecentProject[]>([])
   const [saveMenu, setSaveMenu] = useState(false)
+  const [exportOpen, setExportOpen] = useState(false)
   const [docMenu, setDocMenu] = useState(false)
   const [bookOpen, setBookOpen] = useState(false)
   const [moresOpen, setMoresOpen] = useState(false)
@@ -161,6 +163,7 @@ export function TopBar() {
                   if (next) {
                     setRecents(listRecent())
                     setRecentsOpen(false)
+                    setImportOpen(false)
                   }
                   return next
                 })
@@ -177,15 +180,21 @@ export function TopBar() {
                 onClick={() => {
                   setOpenMenu(false)
                   setRecentsOpen(false)
+                  setImportOpen(false)
                 }}
               />
-              <div className="absolute left-0 top-9 z-20 w-72 rounded-lg border border-border bg-surface py-1 shadow-lg">
+              <div className="absolute left-0 top-9 z-20 w-64 rounded-lg border border-border bg-surface py-1 shadow-lg">
                 <button
                   className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-ink-soft hover:bg-surface-2 hover:text-ink transition-colors cursor-pointer"
                   onClick={() => {
                     setOpenMenu(false)
                     setRecentsOpen(false)
+                    setImportOpen(false)
                     void openProject()
+                  }}
+                  onMouseEnter={() => {
+                    setRecentsOpen(false)
+                    setImportOpen(false)
                   }}
                 >
                   <FolderOpen className="h-4 w-4 text-ink-faint shrink-0" />
@@ -195,7 +204,10 @@ export function TopBar() {
                 {/* Voce Recenti con sottomenu flyout */}
                 <div
                   className="relative"
-                  onMouseEnter={() => setRecentsOpen(true)}
+                  onMouseEnter={() => {
+                    setRecentsOpen(true)
+                    setImportOpen(false)
+                  }}
                   onMouseLeave={() => setRecentsOpen(false)}
                 >
                   <button
@@ -204,7 +216,10 @@ export function TopBar() {
                       'flex w-full items-center justify-between px-3 py-2 text-left text-sm text-ink-soft hover:bg-surface-2 hover:text-ink transition-colors cursor-pointer',
                       recentsOpen && 'bg-surface-2 text-ink',
                     )}
-                    onClick={() => setRecentsOpen((v) => !v)}
+                    onClick={() => {
+                      setRecentsOpen((v) => !v)
+                      setImportOpen(false)
+                    }}
                   >
                     <div className="flex items-center gap-2">
                       <Clock className="h-4 w-4 text-ink-faint shrink-0" />
@@ -228,6 +243,7 @@ export function TopBar() {
                                 onClick={() => {
                                   setOpenMenu(false)
                                   setRecentsOpen(false)
+                                  setImportOpen(false)
                                   void openRecentProject(r.path)
                                 }}
                                 title={r.path}
@@ -272,39 +288,75 @@ export function TopBar() {
                 </div>
 
                 <div className="my-1 border-t border-border" />
-                <div className="flex items-center gap-1.5 px-3 pb-0.5 pt-1 text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
-                  <FileUp className="h-3.5 w-3.5" /> {t.importHeader}
+
+                {/* Voce Importa con sottomenu flyout */}
+                <div
+                  className="relative"
+                  onMouseEnter={() => {
+                    setImportOpen(true)
+                    setRecentsOpen(false)
+                  }}
+                  onMouseLeave={() => setImportOpen(false)}
+                >
+                  <button
+                    type="button"
+                    className={cn(
+                      'flex w-full items-center justify-between px-3 py-2 text-left text-sm text-ink-soft hover:bg-surface-2 hover:text-ink transition-colors cursor-pointer',
+                      importOpen && 'bg-surface-2 text-ink',
+                    )}
+                    onClick={() => {
+                      setImportOpen((v) => !v)
+                      setRecentsOpen(false)
+                    }}
+                  >
+                    <div className="flex items-center gap-2">
+                      <FileUp className="h-4 w-4 text-ink-faint shrink-0" />
+                      <span>{t.importHeader}</span>
+                    </div>
+                    <ChevronRight className="h-3.5 w-3.5 text-ink-faint shrink-0" />
+                  </button>
+
+                  {importOpen && (
+                    <div
+                      className="absolute left-full top-0 -ml-0.5 w-72 rounded-lg border border-border bg-surface py-1 shadow-xl z-30 before:absolute before:-left-2 before:top-0 before:w-2 before:h-full"
+                      data-tauri-drag-region="false"
+                    >
+                      <button
+                        className="block w-full px-3 py-2 text-left text-sm text-ink-soft hover:bg-surface-2 hover:text-ink transition-colors cursor-pointer"
+                        onClick={() => {
+                          setOpenMenu(false)
+                          setRecentsOpen(false)
+                          setImportOpen(false)
+                          void importProject('fountain')
+                        }}
+                      >
+                        {t.importFountainMenu}
+                      </button>
+                      <button
+                        className="block w-full px-3 py-2 text-left text-sm text-ink-soft hover:bg-surface-2 hover:text-ink transition-colors cursor-pointer"
+                        onClick={() => {
+                          setOpenMenu(false)
+                          setRecentsOpen(false)
+                          setImportOpen(false)
+                          void importProject('fdx')
+                        }}
+                      >
+                        {t.importFdxMenu}
+                      </button>
+                      <button
+                        className="block w-full px-3 py-2 text-left text-sm text-ink-soft hover:bg-surface-2 hover:text-ink transition-colors cursor-pointer"
+                        onClick={() => {
+                          setOpenMenu(false)
+                          setRecentsOpen(false)
+                          setImportOpen(false)
+                          void importProject('txt')
+                        }}
+                      >
+                        {t.importTxtMenu}
+                      </button>
+                    </div>
+                  )}
                 </div>
-                <button
-                  className="block w-full px-3 py-2 text-left text-sm text-ink-soft hover:bg-surface-2 cursor-pointer"
-                  onClick={() => {
-                    setOpenMenu(false)
-                    setRecentsOpen(false)
-                    void importProject('fountain')
-                  }}
-                >
-                  {t.importFountainMenu}
-                </button>
-                <button
-                  className="block w-full px-3 py-2 text-left text-sm text-ink-soft hover:bg-surface-2 cursor-pointer"
-                  onClick={() => {
-                    setOpenMenu(false)
-                    setRecentsOpen(false)
-                    void importProject('fdx')
-                  }}
-                >
-                  {t.importFdxMenu}
-                </button>
-                <button
-                  className="block w-full px-3 py-2 text-left text-sm text-ink-soft hover:bg-surface-2 cursor-pointer"
-                  onClick={() => {
-                    setOpenMenu(false)
-                    setRecentsOpen(false)
-                    void importProject('txt')
-                  }}
-                >
-                  {t.importTxtMenu}
-                </button>
               </div>
             </>
           )}
@@ -333,7 +385,13 @@ export function TopBar() {
                 saveMenu && 'border-border bg-surface-2 text-ink',
               )}
               title={t.moreSaveOptions}
-              onClick={() => setSaveMenu((m) => !m)}
+              onClick={() => {
+                setSaveMenu((m) => {
+                  const next = !m
+                  if (next) setExportOpen(false)
+                  return next
+                })
+              }}
             >
               <ChevronDown className={cn('h-3.5 w-3.5 transition-transform duration-150', saveMenu && 'rotate-180')} />
             </button>
@@ -341,42 +399,81 @@ export function TopBar() {
 
           {saveMenu && (
             <>
-              <div className="fixed inset-0 z-10" onClick={() => setSaveMenu(false)} />
-              <div className="absolute left-0 top-9 z-20 w-56 overflow-hidden rounded-lg border border-border bg-surface py-1 shadow-lg">
+              <div
+                className="fixed inset-0 z-10"
+                onClick={() => {
+                  setSaveMenu(false)
+                  setExportOpen(false)
+                }}
+              />
+              <div className="absolute left-0 top-9 z-20 w-56 rounded-lg border border-border bg-surface py-1 shadow-lg">
                 <button
-                  className="block w-full px-3 py-2 text-left text-sm text-ink-soft hover:bg-surface-2 cursor-pointer"
+                  className="block w-full px-3 py-2 text-left text-sm text-ink-soft hover:bg-surface-2 hover:text-ink transition-colors cursor-pointer"
                   onClick={() => {
                     setSaveMenu(false)
+                    setExportOpen(false)
                     void save()
                   }}
+                  onMouseEnter={() => setExportOpen(false)}
                 >
                   {t.saveBtn}
                 </button>
                 <button
-                  className="block w-full px-3 py-2 text-left text-sm text-ink-soft hover:bg-surface-2 cursor-pointer"
+                  className="block w-full px-3 py-2 text-left text-sm text-ink-soft hover:bg-surface-2 hover:text-ink transition-colors cursor-pointer"
                   onClick={() => {
                     setSaveMenu(false)
+                    setExportOpen(false)
                     void save({ saveAs: true })
                   }}
+                  onMouseEnter={() => setExportOpen(false)}
                 >
                   {t.saveAsMenu}
                 </button>
+
                 <div className="my-1 border-t border-border" />
-                <div className="flex items-center gap-1.5 px-3 pb-0.5 pt-1 text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
-                  <Download className="h-3.5 w-3.5" /> {t.exportHeader}
-                </div>
-                {formats.map((f) => (
+
+                {/* Voce Esporta con sottomenu flyout */}
+                <div
+                  className="relative"
+                  onMouseEnter={() => setExportOpen(true)}
+                  onMouseLeave={() => setExportOpen(false)}
+                >
                   <button
-                    key={f}
-                    className="block w-full px-3 py-2 text-left text-sm text-ink-soft hover:bg-surface-2 cursor-pointer"
-                    onClick={() => {
-                      setSaveMenu(false)
-                      void runExport(f)
-                    }}
+                    type="button"
+                    className={cn(
+                      'flex w-full items-center justify-between px-3 py-2 text-left text-sm text-ink-soft hover:bg-surface-2 hover:text-ink transition-colors cursor-pointer',
+                      exportOpen && 'bg-surface-2 text-ink',
+                    )}
+                    onClick={() => setExportOpen((v) => !v)}
                   >
-                    {f === 'txt' ? t.exportTxt : EXPORT_LABEL[f]}
+                    <div className="flex items-center gap-2">
+                      <Download className="h-4 w-4 text-ink-faint shrink-0" />
+                      <span>{t.exportHeader}</span>
+                    </div>
+                    <ChevronRight className="h-3.5 w-3.5 text-ink-faint shrink-0" />
                   </button>
-                ))}
+
+                  {exportOpen && (
+                    <div
+                      className="absolute left-full top-0 -ml-0.5 w-60 rounded-lg border border-border bg-surface py-1 shadow-xl z-30 before:absolute before:-left-2 before:top-0 before:w-2 before:h-full"
+                      data-tauri-drag-region="false"
+                    >
+                      {formats.map((f) => (
+                        <button
+                          key={f}
+                          className="block w-full px-3 py-2 text-left text-sm text-ink-soft hover:bg-surface-2 hover:text-ink transition-colors cursor-pointer"
+                          onClick={() => {
+                            setSaveMenu(false)
+                            setExportOpen(false)
+                            void runExport(f)
+                          }}
+                        >
+                          {f === 'txt' ? t.exportTxt : EXPORT_LABEL[f]}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </>
           )}

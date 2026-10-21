@@ -669,3 +669,7 @@ export const useProject = create<State>((set, get) => ({
     set({ project: { ...project, title }, dirty: true })
   },
 }))
+
+if (typeof window !== 'undefined') {
+  ;(window as unknown as { useProject: typeof useProject }).useProject = useProject
+}

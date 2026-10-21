@@ -505,6 +505,17 @@ async function run() {
     }
   }
 
+  // Hover over the Esporta item to reveal the export formats flyout
+  await new Promise(r => setTimeout(r, 400))
+  const menuButtons = await page.$$('header div.absolute button, div.absolute button')
+  for (const btn of menuButtons) {
+    const text = await btn.evaluate(el => el.textContent || '')
+    if (text.includes('Esporta') || text.includes('Export')) {
+      await btn.hover()
+      break
+    }
+  }
+
   await new Promise(r => setTimeout(r, 600))
   const p5 = path.join(OUTPUT_DIR, '05_export_modal.png')
   await page.screenshot({ path: p5 })

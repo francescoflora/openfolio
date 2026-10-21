@@ -53,7 +53,7 @@ jobs:
         with:
           tagName: v__VERSION__
           releaseName: 'OpenFolio v__VERSION__'
-          releaseBody: 'Asset della release: installer NSIS e eseguibile standalone.'
+          releaseBody: 'Asset della release: installer NSIS, pacchetto MSIX e eseguibile standalone.'
           releaseDraft: false
           prerelease: false
           generateReleaseNotes: true
@@ -72,7 +72,29 @@ jobs:
           if (-not $exe) { Write-Error "Eseguibile non trovato"; exit 1 }
           gh release upload "v${{ steps.tauri.outputs.appVersion }}" $exe.FullName --clobber
 
-      - name: Push installer to store-releases branch
+      - name: Build MSIX package
+        if: steps.tauri.outputs.appVersion != ''
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          npm run tauri:windows:build
+
+      - name: Upload MSIX package to release
+        if: steps.tauri.outputs.appVersion != ''
+        continue-on-error: true
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $msix = Get-ChildItem -Path "src-tauri/target/msix" -Filter "*.msix*" -File -Recurse | Select-Object -First 1
+          if ($msix) {
+            Write-Host "Found MSIX: $($msix.FullName)"
+            gh release upload "v${{ steps.tauri.outputs.appVersion }}" $msix.FullName --clobber
+          } else {
+            Write-Warning "Nessun pacchetto MSIX trovato in src-tauri/target/msix"
+          }
+
+      - name: Push installer and MSIX to store-releases branch
         if: steps.tauri.outputs.appVersion != ''
         continue-on-error: true
         shell: pwsh
@@ -84,11 +106,12 @@ jobs:
           if (-not $nsisExe) {
             $nsisExe = Get-ChildItem -Path "src-tauri/target/release/bundle/nsis" -Filter "*.exe" -File | Select-Object -First 1
           }
-          if (-not $nsisExe) {
-            Write-Error "NSIS installer non trovato in bundle/nsis"
+          $msix = Get-ChildItem -Path "src-tauri/target/msix" -Filter "*.msix*" -File -Recurse | Select-Object -First 1
+
+          if (-not $nsisExe -and -not $msix) {
+            Write-Error "Nessun installer (NSIS o MSIX) trovato per la release dello Store"
             exit 1
           }
-          Write-Host "Found installer: $($nsisExe.FullName)"
 
           git clone --depth 1 --branch store-releases "https://x-access-token:$($env:GITHUB_TOKEN)@github.com/${{ github.repository }}.git" store_repo
 
@@ -96,20 +119,28 @@ jobs:
           if (-not (Test-Path $targetDir)) {
             New-Item -ItemType Directory -Force -Path $targetDir | Out-Null
           }
-          Copy-Item -Path $nsisExe.FullName -Destination "$targetDir/$($nsisExe.Name)" -Force
+
+          if ($nsisExe) {
+            Write-Host "Found installer: $($nsisExe.FullName)"
+            Copy-Item -Path $nsisExe.FullName -Destination "$targetDir/$($nsisExe.Name)" -Force
+          }
+          if ($msix) {
+            Write-Host "Found MSIX: $($msix.FullName)"
+            Copy-Item -Path $msix.FullName -Destination "$targetDir/$($msix.Name)" -Force
+          }
 
           Push-Location store_repo
           try {
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
-            git add "v$version/$($nsisExe.Name)"
+            git add "v$version/*"
             $status = git status --porcelain
             if ($status) {
-              git commit -m "Store binary v$version [skip ci]"
+              git commit -m "Store binary v$version (installer & msix) [skip ci]"
               git push origin store-releases
               Write-Host "Pushed v$version to store-releases successfully!"
             } else {
-              Write-Host "Installer for v$version already exists in store-releases."
+              Write-Host "Binaries for v$version already exist in store-releases."
             }
           } finally {
             Pop-Location

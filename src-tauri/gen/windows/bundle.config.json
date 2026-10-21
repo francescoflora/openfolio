@@ -1,0 +1,25 @@
+{
+  "identifier": "FrancescoFlora.OpenFolioScreenwritingCE",
+  "publisher": "CN=E9D603AC-FA2E-4D69-8B2F-824A40934EE0",
+  "publisherDisplayName": "Francesco Flora",
+  "displayName": "OpenFolio Screenwriting CE",
+  "executableName": "openfolio.exe",
+  "capabilities": {
+    "general": [
+      "internetClient"
+    ]
+  },
+  "extensions": {
+    "shareTarget": false,
+    "fileAssociations": [],
+    "protocolHandlers": []
+  },
+  "signing": {
+    "pfx": null,
+    "pfxPassword": null
+  },
+  "resourceIndex": {
+    "enabled": false,
+    "keepConfig": false
+  }
+}
