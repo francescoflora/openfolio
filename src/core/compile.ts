@@ -159,9 +159,9 @@ const PAGE_CSS = `
 
 const PRINT_CSS = `
 * { box-sizing: border-box; }
-body { margin: 0; font-family: 'Courier Prime', 'Courier New', monospace; font-size: 12pt; color: #000; }
-h1.book-title { font-family: 'Inter', sans-serif; text-align: center; margin: 3in 1in; font-size: 24pt; }
-.script-page { line-height: 1.18; }
+body { margin: 0; font-family: 'Courier Prime', 'Courier New', monospace; font-size: 12pt; color: #000; overflow-wrap: break-word; word-break: break-word; }
+h1.book-title { font-family: 'Inter', sans-serif; text-align: center; margin: 3in 1in; font-size: 24pt; overflow-wrap: break-word; word-break: break-word; }
+.script-page { line-height: 1.18; overflow-wrap: break-word; word-break: break-word; }
 .script-page .el-section_heading { text-align: center; font-weight: 700; text-transform: uppercase; margin: 2em 0 1.2em; letter-spacing: 0.05em; }
 .script-page .el-scene_heading { text-transform: uppercase; font-weight: 700; margin: 1.85em 0 0.85em; padding-left: ${SCREENPLAY_INDENT_IN.sceneHeading}in; letter-spacing: 0.02em; }
 .script-page .el-action { margin: 0.85em 0; padding-left: ${SCREENPLAY_INDENT_IN.action}in; }
@@ -172,18 +172,18 @@ h1.book-title { font-family: 'Inter', sans-serif; text-align: center; margin: 3i
 .script-page .el-shot { text-transform: uppercase; font-weight: 700; margin: 1.35em 0; padding-left: ${SCREENPLAY_INDENT_IN.shot}in; }
 .scene { break-before: page; }
 .scene.script-page:first-of-type, .novel-scene:first-of-type { counter-reset: page 1; }
-.title-page { page: title-page; break-after: page; text-align: center; margin-top: 3in; }
+.title-page { page: title-page; break-after: page; text-align: center; margin-top: 3in; overflow-wrap: break-word; word-break: break-word; }
 .title-page h1 { font-size: 24pt; margin: 0 0 .5in; }
 .title-page .contact { margin-top: 2.5in; font-size: 11pt; white-space: pre-line; }
 .novel section, .novel h1, .novel h2, .novel h3 { break-inside: auto; }
-.novel h1 { font-family: 'EB Garamond', 'Times New Roman', Cambria, serif; text-align: center; text-transform: uppercase; letter-spacing: 0.2em; font-size: 16pt; margin: 2in 0 1.5in; break-after: avoid; font-variant-numeric: lining-nums; font-feature-settings: 'lnum' 1; }
-.novel h2, .novel h3 { font-family: 'EB Garamond', 'Times New Roman', Cambria, serif; font-weight: bold; margin: 1.5em 0 .5em; break-after: avoid; font-variant-numeric: lining-nums; font-feature-settings: 'lnum' 1; }
-.novel p { font-family: 'Courier Prime', 'Courier New', monospace; text-indent: 1.75em; margin: 0; }
+.novel h1 { font-family: 'EB Garamond', 'Times New Roman', Cambria, serif; text-align: center; text-transform: uppercase; letter-spacing: 0.2em; font-size: 16pt; margin: 2in 0 1.5in; break-after: avoid; font-variant-numeric: lining-nums; font-feature-settings: 'lnum' 1; overflow-wrap: break-word; word-break: break-word; }
+.novel h2, .novel h3 { font-family: 'EB Garamond', 'Times New Roman', Cambria, serif; font-weight: bold; margin: 1.5em 0 .5em; break-after: avoid; font-variant-numeric: lining-nums; font-feature-settings: 'lnum' 1; overflow-wrap: break-word; word-break: break-word; }
+.novel p { font-family: 'Courier Prime', 'Courier New', monospace; text-indent: 1.75em; margin: 0; overflow-wrap: break-word; word-break: break-word; }
 .novel.no-indent p { text-indent: 0; margin-bottom: 0.85em; }
-.novel { font-size: 12pt; line-height: 2; font-variant-numeric: lining-nums; font-feature-settings: 'lnum' 1; }
+.novel { font-size: 12pt; line-height: 2; font-variant-numeric: lining-nums; font-feature-settings: 'lnum' 1; overflow-wrap: break-word; word-break: break-word; }
 .novel.justify p { text-align: justify; }
-.novel blockquote { font-family: 'Courier Prime', 'Courier New', monospace; font-style: italic; margin: 1em 2em; }
-.part-page { page: part-page; break-before: page; break-after: page; text-align: center; padding-top: 3in; }
+.novel blockquote { font-family: 'Courier Prime', 'Courier New', monospace; font-style: italic; margin: 1em 2em; overflow-wrap: break-word; word-break: break-word; }
+.part-page { page: part-page; break-before: page; break-after: page; text-align: center; padding-top: 3in; overflow-wrap: break-word; word-break: break-word; }
 .part-page h1 { font-family: 'EB Garamond', 'Times New Roman', Cambria, serif; text-align: center; text-transform: uppercase; letter-spacing: 0.2em; font-size: 20pt; }
 `
 
