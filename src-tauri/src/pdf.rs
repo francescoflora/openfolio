@@ -144,19 +144,41 @@ fn wrap_paragraph(
 
     for word in words {
         let target_w = if is_first { first_line_w } else { other_lines_w };
-        if cur_line.is_empty() {
-            cur_line.push_str(word);
-        } else {
+
+        if !cur_line.is_empty() {
             let mut candidate = cur_line.clone();
             candidate.push(' ');
             candidate.push_str(word);
             let w = measure_text_width_mm(&candidate, kind, font_size_pt);
             if w <= target_w {
                 cur_line = candidate;
+                continue;
             } else {
                 lines.push(cur_line);
-                cur_line = word.to_string();
+                cur_line = String::new();
                 is_first = false;
+            }
+        }
+
+        let target_w = if is_first { first_line_w } else { other_lines_w };
+        let word_w = measure_text_width_mm(word, kind, font_size_pt);
+
+        if word_w <= target_w {
+            cur_line.push_str(word);
+        } else {
+            // Word is too long to fit on a line by itself: break it character by character.
+            for ch in word.chars() {
+                let current_target_w = if is_first { first_line_w } else { other_lines_w };
+                if !cur_line.is_empty() {
+                    let mut candidate = cur_line.clone();
+                    candidate.push(ch);
+                    if measure_text_width_mm(&candidate, kind, font_size_pt) > current_target_w {
+                        lines.push(cur_line);
+                        cur_line = String::new();
+                        is_first = false;
+                    }
+                }
+                cur_line.push(ch);
             }
         }
     }
@@ -919,6 +941,7 @@ fn render_novel_pages(
 }
 
 fn wrap_text(text: &str, max_chars: usize) -> Vec<String> {
+    let max_chars = max_chars.max(1);
     let mut lines = Vec::new();
     for paragraph in text.lines() {
         let words: Vec<&str> = paragraph.split_whitespace().collect();
@@ -929,17 +952,32 @@ fn wrap_text(text: &str, max_chars: usize) -> Vec<String> {
         let mut cur_chars = 0usize;
         for word in words {
             let w_chars = word.chars().count();
-            if cur_line.is_empty() {
+            if !cur_line.is_empty() {
+                if cur_chars + 1 + w_chars <= max_chars {
+                    cur_line.push(' ');
+                    cur_line.push_str(word);
+                    cur_chars += 1 + w_chars;
+                    continue;
+                } else {
+                    lines.push(cur_line);
+                    cur_line = String::new();
+                    cur_chars = 0;
+                }
+            }
+
+            if w_chars <= max_chars {
                 cur_line.push_str(word);
                 cur_chars = w_chars;
-            } else if cur_chars + 1 + w_chars <= max_chars {
-                cur_line.push(' ');
-                cur_line.push_str(word);
-                cur_chars += 1 + w_chars;
             } else {
-                lines.push(cur_line);
-                cur_line = word.to_string();
-                cur_chars = w_chars;
+                for ch in word.chars() {
+                    if cur_chars >= max_chars && !cur_line.is_empty() {
+                        lines.push(cur_line);
+                        cur_line = String::new();
+                        cur_chars = 0;
+                    }
+                    cur_line.push(ch);
+                    cur_chars += 1;
+                }
             }
         }
         if !cur_line.is_empty() {
@@ -1919,4 +1957,92 @@ mod tests {
         });
         assert!(!has_ragged_spacing, "Ragged novel text must NOT emit positive SetWordSpacing");
     }
+
+    #[test]
+    fn test_wrap_paragraph_breaks_unbroken_long_words() {
+        // A single very long string without spaces (similar to user report)
+        let long_word = "sdfadfadfasdfasdfasdlfsalfasdlfasdlfbdslahfbalsfbalsdhfbalsjdhbfalsjhbfasljdhfblasjdbflasjdbfljsdabflsjdahflfsadjhfasdljhfasdlhfsdasdlhbfsdajlhbdsdljahbfsdhsahfsdhbflasjdbbfljasdhbflasjdhfbsadylhsfaljdfbalsdjhfbdflasjdbflasjdbfasjhbdffjlashbdfjlashbdbfljashbdbfylahsbflsahfljbbfajlhsffajhshfjas";
+        let target_w = 100.0; // 100 mm
+        let lines = wrap_paragraph(long_word, target_w, target_w, FontKind::TimesRoman, 12.0);
+
+        // Must be broken into multiple lines
+        assert!(lines.len() > 1, "Expected long unbroken word to wrap across multiple lines, got {}", lines.len());
+
+        // Every line must fit within target_w
+        for (i, line) in lines.iter().enumerate() {
+            let w = measure_text_width_mm(line, FontKind::TimesRoman, 12.0);
+            assert!(
+                w <= target_w + 0.1,
+                "Line {} ('{}') width ({:.2}mm) exceeds target ({:.2}mm)",
+                i,
+                line,
+                w,
+                target_w
+            );
+        }
+
+        // Concatenating all lines must restore the original string
+        let reconstructed = lines.concat();
+        assert_eq!(reconstructed, long_word);
+    }
+
+    #[test]
+    fn test_wrap_text_breaks_unbroken_long_words() {
+        let long_word = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        let max_chars = 20;
+        let lines = wrap_text(long_word, max_chars);
+
+        assert_eq!(lines.len(), 4);
+        assert_eq!(lines[0].len(), 20);
+        assert_eq!(lines[1].len(), 20);
+        assert_eq!(lines[2].len(), 20);
+        assert_eq!(lines[3].len(), 2);
+        assert_eq!(lines.concat(), long_word);
+    }
+
+    #[test]
+    fn test_generate_pdf_with_unbroken_long_word() {
+        let long_word = "sdfadfadfasdfasdfasdlfsalfasdlfasdlfbdslahfbalsfbalsdhfbalsjdhbfalsjhbfasljdhfblasjdbflasjdbfljsdabflsjdahflfsadjhfasdljhfasdlhfsdasdlhbfsdajlhbdsdljahbfsdhsahfsdhbflasjdbbfljasdhb";
+        let payload = PdfExportPayload {
+            title: "Test Long Word".to_string(),
+            mode: "novel".to_string(),
+            author: None,
+            contact: None,
+            language: Some("it".to_string()),
+            font_family: Some("serif".to_string()),
+            font_size_pt: Some(12.0),
+            justify: Some(true),
+            indent: Some(true),
+            has_title_page: Some(false),
+            page_numbers: Some(true),
+            page_size: Some("letter".to_string()),
+            scenes: vec![
+                SceneDoc {
+                    r#type: "doc".to_string(),
+                    content: vec![
+                        JsonContent {
+                            r#type: Some("heading".to_string()),
+                            attrs: None,
+                            content: None,
+                            marks: None,
+                            text: Some("CAPITOLO 1".to_string()),
+                        },
+                        JsonContent {
+                            r#type: Some("paragraph".to_string()),
+                            attrs: None,
+                            content: None,
+                            marks: None,
+                            text: Some(long_word.to_string()),
+                        },
+                    ],
+                },
+            ],
+        };
+
+        let result = generate_pdf(&payload);
+        assert!(result.is_ok(), "PDF generation must succeed with unbroken long word");
+        let bytes = result.unwrap();
+        assert!(!bytes.is_empty(), "PDF bytes must not be empty");
+    }
 }
+

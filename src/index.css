@@ -90,6 +90,8 @@ select:disabled {
 .ProseMirror {
   outline: none;
   caret-color: var(--accent);
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 ::selection {
@@ -104,6 +106,8 @@ select:disabled {
   line-height: 1.18;
   color: var(--ink);
   letter-spacing: 0;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .script-page .el-scene_heading {
@@ -179,6 +183,8 @@ select:disabled {
   color: var(--ink);
   font-variant-numeric: lining-nums;
   font-feature-settings: 'lnum' 1;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 /* Chapter Heading (H1) - Centrato, maiuscolo, spazio di respiro iniziale e prima del testo */
