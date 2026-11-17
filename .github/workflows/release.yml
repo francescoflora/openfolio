@@ -74,23 +74,23 @@ jobs:
 
       - name: Build MSIX package
         if: steps.tauri.outputs.appVersion != ''
-        continue-on-error: true
         shell: pwsh
         run: |
           npm run tauri:windows:build
 
       - name: Upload MSIX package to release
         if: steps.tauri.outputs.appVersion != ''
-        continue-on-error: true
         shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          $msix = Get-ChildItem -Path "src-tauri/target/msix" -Filter "*.msix*" -File -Recurse | Select-Object -First 1
-          if ($msix) {
-            Write-Host "Found MSIX: $($msix.FullName)"
-            gh release upload "v${{ steps.tauri.outputs.appVersion }}" $msix.FullName --clobber
-          } else {
-            Write-Warning "Nessun pacchetto MSIX trovato in src-tauri/target/msix"
+          $msix = Get-ChildItem -Path "src-tauri/target/msix" -Filter "*.msixbundle" -File -Recurse |
+                  Sort-Object LastWriteTime -Descending | Select-Object -First 1
+          if (-not $msix) {
+            $msix = Get-ChildItem -Path "src-tauri/target/msix" -Filter "*.msix" -File -Recurse |
+                    Sort-Object LastWriteTime -Descending | Select-Object -First 1
           }
+          if (-not $msix) { Write-Error "Nessun pacchetto MSIX trovato in src-tauri/target/msix"; exit 1 }
+          Write-Host "Found MSIX: $($msix.FullName)"
+          gh release upload "v${{ steps.tauri.outputs.appVersion }}" $msix.FullName --clobber
 

@@ -1,7 +1,7 @@
 {
   "name": "openfolio",
   "private": true,
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Editor open source per copioni e romanzi (screenplay + novel).",
   "license": "GPL-3.0-or-later",
   "type": "module",
@@ -15,7 +15,7 @@
     "sync-version": "node scripts/sync-version.mjs",
     "check-version": "node scripts/sync-version.mjs --check",
     "version": "node scripts/sync-version.mjs",
-    "tauri:windows:build": "tauri-windows-bundle build --runner npm"
+    "tauri:windows:build": "tauri-windows-bundle build --runner npm --regenerate-assets"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.12.3",
