@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { APP_NAME, APP_AUTHOR, APP_VERSION_FALLBACK } from '@/core/appinfo'
 import logo from '@/assets/logo.svg'
 
@@ -8,7 +8,6 @@ interface SplashScreenProps {
 }
 
 export function SplashScreen({ onFinish, isReady = true }: SplashScreenProps) {
-  const [fading, setFading] = useState(false)
   const mountedAtRef = useRef(Date.now())
   const finishedRef = useRef(false)
 
@@ -19,10 +18,7 @@ export function SplashScreen({ onFinish, isReady = true }: SplashScreenProps) {
     const triggerFinish = () => {
       if (finishedRef.current) return
       finishedRef.current = true
-      setFading(true)
-      setTimeout(() => {
-        onFinish()
-      }, 300)
+      onFinish()
     }
 
     // Timeout di sicurezza: chiudi comunque se il caricamento reale richiede troppo tempo
@@ -44,9 +40,7 @@ export function SplashScreen({ onFinish, isReady = true }: SplashScreenProps) {
 
   return (
     <div
-      className={`fixed inset-0 z-50 overflow-hidden bg-black text-white select-none transition-opacity duration-300 ${
-        fading ? 'opacity-0 pointer-events-none' : 'opacity-100'
-      }`}
+      className="fixed inset-0 z-50 overflow-hidden bg-black text-white select-none"
       role="dialog"
       aria-label={APP_NAME}
     >
