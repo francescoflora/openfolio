@@ -1,6 +1,6 @@
 [package]
 name = "openfolio"
-version = "0.2.2"
+version = "0.3.0"
 description = "Editor open source per copioni e romanzi"
 authors = ["OpenFolio"]
 license = "GPL-3.0-or-later"
@@ -32,3 +32,6 @@ printpdf = "0.12.8"
 tauri-plugin-updater = "2"
 tauri-plugin-process = "2"
 tauri-plugin-opener = "2"
+
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.62", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging"] }

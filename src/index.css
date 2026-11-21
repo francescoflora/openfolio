@@ -258,6 +258,26 @@ select:disabled {
   text-underline-offset: 2px;
 }
 
+.ProseMirror-search-match {
+  background-color: rgba(245, 158, 11, 0.22);
+  border-radius: 2px;
+}
+
+.ProseMirror-active-search-match {
+  background-color: rgba(245, 158, 11, 0.5);
+  border-radius: 2px;
+}
+
+.ProseMirror .spell-error {
+  text-decoration: underline wavy #ef4444;
+  text-decoration-skip-ink: none;
+  text-underline-offset: 2px;
+}
+
+.dark .ProseMirror .spell-error {
+  text-decoration-color: #f87171;
+}
+
 .ProseMirror .is-empty::before {
   content: attr(data-placeholder);
   color: var(--ink-faint);

@@ -41,6 +41,7 @@ export async function applyStartWindowSize(): Promise<void> {
   try {
     const { getCurrentWindow } = await import('@tauri-apps/api/window')
     const { LogicalSize } = await import('@tauri-apps/api/dpi')
+    const { invoke } = await import('@tauri-apps/api/core')
     const win = getCurrentWindow()
 
     const isMax = await win.isMaximized().catch(() => false)
@@ -63,8 +64,12 @@ export async function applyStartWindowSize(): Promise<void> {
       }
     }
 
-    await win.setSize(new LogicalSize(width, height))
-    await win.center()
+    await invoke('resize_window_centered', {
+      width,
+      height,
+      minWidth: START_MIN_WIDTH,
+      minHeight: START_MIN_HEIGHT,
+    })
   } catch (err) {
     console.warn('Failed to resize to start window', err)
   }
@@ -77,13 +82,20 @@ export async function applyDefaultAppSize(): Promise<void> {
   if (!isTauri()) return
   try {
     const { getCurrentWindow } = await import('@tauri-apps/api/window')
-    const { LogicalSize } = await import('@tauri-apps/api/dpi')
+    const { invoke } = await import('@tauri-apps/api/core')
     const win = getCurrentWindow()
 
+    if (await win.isMaximized().catch(() => false)) {
+      await win.unmaximize().catch(() => {})
+    }
+
     const { width, height } = getDefaultAppSize()
-    await win.setMinSize(new LogicalSize(APP_MIN_WIDTH, APP_MIN_HEIGHT))
-    await win.setSize(new LogicalSize(width, height))
-    await win.center()
+    await invoke('resize_window_centered', {
+      width,
+      height,
+      minWidth: APP_MIN_WIDTH,
+      minHeight: APP_MIN_HEIGHT,
+    })
   } catch (err) {
     console.warn('Failed to resize to default app window', err)
   }

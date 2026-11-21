@@ -1,6 +1,9 @@
 use std::sync::Mutex;
 use tauri::Manager;
 
+#[cfg(windows)]
+use windows::Win32::UI::WindowsAndMessaging::{SetWindowPos, SWP_NOACTIVATE, SWP_NOZORDER};
+
 pub mod fdx;
 pub mod fountain;
 pub mod models;
@@ -54,6 +57,52 @@ fn export_pdf(payload: PdfExportPayload) -> Result<Vec<u8>, String> {
     pdf::generate_pdf(&payload)
 }
 
+/// Resizes and centers the window in a single native operation where possible,
+/// avoiding a visible intermediate resize before the window is repositioned.
+#[tauri::command]
+fn resize_window_centered(
+    window: tauri::WebviewWindow,
+    width: f64,
+    height: f64,
+    min_width: f64,
+    min_height: f64,
+) -> Result<(), String> {
+    use tauri::{LogicalSize, Size};
+
+    #[cfg(windows)]
+    {
+        let monitor = window
+            .current_monitor()
+            .map_err(|e| e.to_string())?
+            .ok_or_else(|| "No monitor found".to_string())?;
+        let scale = monitor.scale_factor();
+        let work = monitor.work_area();
+        let w = (width * scale).round() as i32;
+        let h = (height * scale).round() as i32;
+        let x = work.position.x + ((work.size.width as i32 - w) / 2);
+        let y = work.position.y + ((work.size.height as i32 - h) / 2);
+        let hwnd = window.hwnd().map_err(|e| e.to_string())?;
+        unsafe {
+            SetWindowPos(hwnd, None, x, y, w, h, SWP_NOZORDER | SWP_NOACTIVATE)
+                .map_err(|e| e.to_string())?;
+        }
+    }
+
+    #[cfg(not(windows))]
+    {
+        window
+            .set_size(Size::Logical(LogicalSize::new(width, height)))
+            .map_err(|e| e.to_string())?;
+        window.center().map_err(|e| e.to_string())?;
+    }
+
+    window
+        .set_min_size(Some(Size::Logical(LogicalSize::new(min_width, min_height))))
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -66,7 +115,8 @@ pub fn run() {
             import_fountain,
             export_fdx,
             import_fdx,
-            export_pdf
+            export_pdf,
+            resize_window_centered
         ])
         .setup(|app| {
             let launch_file = std::env::args()
