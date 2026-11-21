@@ -10,6 +10,8 @@ export interface OpenedFile {
   text: string
   /** Absolute path when running under Tauri (undefined in the browser). */
   path?: string
+  /** Bind the browser save target only after the caller accepts the document. */
+  acceptDocumentTarget?: () => void
 }
 
 function browserDownload(filename: string, data: string | Uint8Array, mime: string) {
@@ -44,10 +46,16 @@ type FsWindow = Window & {
 }
 
 let currentHandle: FsFileHandle | null = null
+let documentTargetGeneration = 0
+
+function bindDocumentTarget(handle: FsFileHandle | null): void {
+  currentHandle = handle
+  documentTargetGeneration += 1
+}
 
 /** Forget the bound file (browser): next save asks for a location. */
 export function resetDocumentTarget(): void {
-  currentHandle = null
+  bindDocumentTarget(null)
 }
 
 function pickerTypes(extensions: string[]) {
@@ -81,8 +89,12 @@ export async function openTextFile(extensions: string[], filterName = 'Documento
     try {
       const [handle] = await w.showOpenFilePicker({ multiple: false, types: pickerTypes(extensions) })
       if (!handle) return null
-      currentHandle = handle
-      return { name: handle.name, text: await (await handle.getFile()).text() }
+      const text = await (await handle.getFile()).text()
+      return {
+        name: handle.name,
+        text,
+        acceptDocumentTarget: () => bindDocumentTarget(handle),
+      }
     } catch (e) {
       if ((e as DOMException)?.name === 'AbortError') return null
     }
@@ -94,7 +106,11 @@ export async function openTextFile(extensions: string[], filterName = 'Documento
     input.accept = extensions.map((e) => `.${e}`).join(',')
     input.onchange = async () => {
       const file = input.files?.[0]
-      resolve(file ? { name: file.name, text: await file.text() } : null)
+      resolve(file ? {
+        name: file.name,
+        text: await file.text(),
+        acceptDocumentTarget: resetDocumentTarget,
+      } : null)
     }
     input.click()
   })
@@ -143,6 +159,7 @@ export async function saveDocument(
   currentPath?: string | null,
   saveAs = false,
 ): Promise<{ path: string | null } | null> {
+  const targetGeneration = documentTargetGeneration
   if (isTauri()) {
     let path = !saveAs && currentPath ? currentPath : null
     if (!path) {
@@ -166,8 +183,9 @@ export async function saveDocument(
         suggestedName: defaultName,
         types: pickerTypes(filters[0]?.extensions ?? ['ofp', 'openfolio']),
       })
-      currentHandle = handle
       await writeHandle(handle, text)
+      // A project may have been closed or opened while the picker/write was pending.
+      if (documentTargetGeneration === targetGeneration) bindDocumentTarget(handle)
       return { path: null }
     } catch (e) {
       if ((e as DOMException)?.name === 'AbortError') return null

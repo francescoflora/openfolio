@@ -5,13 +5,14 @@ export function textOf(node: JSONContent, hardBreak = '\n'): string {
 }
 
 export function collectText(doc: JSONContent): string {
-  const out: string[] = []
-  const walk = (node: JSONContent) => {
-    if (node.text) out.push(node.text)
-    node.content?.forEach(walk)
-  }
-  walk(doc)
-  return out.join(' ')
+  if (doc.text !== undefined) return doc.text
+  if (doc.type === 'hard_break') return ' '
+
+  const content = doc.content ?? []
+  // Formatting and revisions split inline text into runs without adding spaces.
+  // Only block boundaries and hard breaks separate words.
+  const separator = content.some((node) => node.type !== 'text' && node.type !== 'hard_break') ? ' ' : ''
+  return content.map(collectText).filter(Boolean).join(separator)
 }
 
 export function countWords(doc: JSONContent): number {

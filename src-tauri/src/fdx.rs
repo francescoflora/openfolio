@@ -73,7 +73,9 @@ pub fn scenes_to_fdx(scenes: &[SceneDoc]) -> Result<String, String> {
 /// Parse a Final Draft XML string into OpenFolio scenes.
 pub fn fdx_to_scenes(xml: &str) -> Result<Vec<SceneDoc>, String> {
     let mut reader = Reader::from_str(xml);
-    reader.config_mut().trim_text(true);
+    // Spaces at the edges of adjacent Text runs separate words in formatted FDX.
+    // Whitespace outside Text elements is already ignored by the parser below.
+    reader.config_mut().trim_text(false);
 
     let mut buf = Vec::new();
     let mut current_type: Option<String> = None;
@@ -131,6 +133,13 @@ pub fn fdx_to_scenes(xml: &str) -> Result<Vec<SceneDoc>, String> {
             Ok(Event::Text(ref e)) => {
                 if inside_paragraph && inside_text && !inside_title_page {
                     let text = quick_xml::escape::unescape(e.as_ref()).map_err(|err| err.to_string())?;
+                    current_text.push_str(&text);
+                }
+            }
+            Ok(Event::GeneralRef(ref e)) => {
+                if inside_paragraph && inside_text && !inside_title_page {
+                    let reference = format!("&{};", e.as_ref());
+                    let text = quick_xml::escape::unescape(&reference).map_err(|err| err.to_string())?;
                     current_text.push_str(&text);
                 }
             }
@@ -218,6 +227,29 @@ pub fn fdx_to_scenes(xml: &str) -> Result<Vec<SceneDoc>, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_fdx_preserves_spaces_between_formatted_text_runs() {
+        let xml = r#"<FinalDraft>
+  <Content>
+    <Paragraph Type="Dialogue">
+      <Text>Hello </Text><Text Style="Bold">world</Text><Text> </Text><Text>&amp; everyone </Text>
+    </Paragraph>
+  </Content>
+</FinalDraft>"#;
+
+        let scenes = fdx_to_scenes(xml).expect("parse failed");
+        assert_eq!(scenes.len(), 1);
+        assert_eq!(scenes[0].content.len(), 1);
+        assert_eq!(scenes[0].content[0].text_content(), "Hello world & everyone ");
+    }
+
+    #[test]
+    fn test_fdx_preserves_named_and_numeric_entities_and_cdata() {
+        let xml = r#"<FinalDraft><Content><Paragraph Type="Action"><Text>&quot;Caff&#232;&quot; &amp; &lt;tea&gt; &#x1F642; <![CDATA[&amp;]]></Text></Paragraph></Content></FinalDraft>"#;
+        let scenes = fdx_to_scenes(xml).expect("parse failed");
+        assert_eq!(scenes[0].content[0].text_content(), "\"Caffè\" & <tea> 🙂 &amp;");
+    }
 
     #[test]
     fn test_fdx_roundtrip() {

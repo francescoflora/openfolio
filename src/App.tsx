@@ -154,44 +154,36 @@ export default function App() {
     }
   }, [projectTitle])
 
-  const prevHasProjectRef = useRef<boolean | null>(null)
+  // The native window starts at the compact StartScreen size.
+  const prevHasProjectRef = useRef(false)
 
-  const handleSplashFinish = useCallback(async () => {
+  const handleSplashFinish = useCallback(() => {
     setShowSplash(false)
-    if (isTauri()) {
-      try {
-        const currentHasProject = useProject.getState().project !== null
-        prevHasProjectRef.current = currentHasProject
-        if (currentHasProject) {
-          await applyDefaultAppSize()
-        }
-      } catch (err) {
-        console.warn('Splash transition error', err)
-      }
-    }
   }, [])
 
   useEffect(() => {
-    if (showSplash) return
+    if (showSplash || !isTauri() || prevHasProjectRef.current === hasProject) return
 
-    if (prevHasProjectRef.current === null) {
-      prevHasProjectRef.current = hasProject
-      return
-    }
+    // Click effects can run before paint. Give the destination screen a full
+    // painted frame before enlarging the native window and its WebView.
+    let resizeFrame = 0
+    const paintFrame = requestAnimationFrame(() => {
+      resizeFrame = requestAnimationFrame(() => {
+        prevHasProjectRef.current = hasProject
+        void (hasProject ? applyDefaultAppSize() : applyStartWindowSize())
+      })
+    })
 
-    if (!prevHasProjectRef.current && hasProject) {
-      prevHasProjectRef.current = true
-      void applyDefaultAppSize()
-    } else if (prevHasProjectRef.current && !hasProject) {
-      prevHasProjectRef.current = false
-      void applyStartWindowSize()
+    return () => {
+      cancelAnimationFrame(paintFrame)
+      cancelAnimationFrame(resizeFrame)
     }
   }, [hasProject, showSplash])
 
   return (
     <>
       {showSplash && <SplashScreen isReady={isAppReady} onFinish={handleSplashFinish} />}
-      <div className="flex h-full min-w-0 flex-col overflow-hidden">
+      <div className="flex h-full min-w-0 flex-col overflow-hidden bg-canvas">
         {!hasProject || !mode ? (
           <StartScreen />
         ) : (

@@ -244,6 +244,8 @@ interface State {
   deleteSnapshot: (id: string, snapId: string) => void
 }
 
+let saveInProgress = false
+
 export const useProject = create<State>((set, get) => ({
   project: null,
   scenes: {},
@@ -381,6 +383,7 @@ export const useProject = create<State>((set, get) => ({
         view: 'editor',
         zoom: p.settings.zoom ?? get().zoom ?? initialZoom(),
       })
+      file.acceptDocumentTarget?.()
       if (file.path) addRecent(file.path, p.title, p.mode)
     } catch (e) {
       console.error('Apertura non riuscita', e)
@@ -467,11 +470,12 @@ export const useProject = create<State>((set, get) => ({
 
   save: async (opts) => {
     const { project, scenes, filePath, language } = get()
-    if (!project) return
+    if (!project || saveInProgress) return
+    saveInProgress = true
     const t = uiText(language)
-    get().startOperation('save', t.savingProgress, t.savingProgressHint)
+    const operationId = get().startOperation('save', t.savingProgress, t.savingProgressHint)
+    const ownsOperation = () => get().operation?.id === operationId && get().operation?.type === 'save'
     try {
-      await new Promise((r) => setTimeout(r, 200))
       const text = serializeProjectFile(project, scenes)
       const name = `${slug(project.title)}.${PROJECT_EXTENSION}`
       const res = await saveDocument(
@@ -482,21 +486,32 @@ export const useProject = create<State>((set, get) => ({
         opts?.saveAs,
       )
       if (!res) {
-        get().dismissOperation()
+        if (ownsOperation()) get().dismissOperation()
         return
       }
-      if (res.path) {
-        addRecent(res.path, project.title, project.mode)
-        set({ filePath: res.path, dirty: false })
-      } else {
-        set({ dirty: false })
+      if (res.path) addRecent(res.path, project.title, project.mode)
+      const current = get()
+      if (current.project?.id !== project.id || current.filePath !== filePath) {
+        if (ownsOperation()) get().dismissOperation()
+        return
       }
-      get().finishOperation('success', t.saveCompleted, t.saveCompletedHint)
-      get().showToast(t.toastSaved)
+      const dirty = current.project !== project || current.scenes !== scenes
+      set({
+        filePath: res.path ?? filePath,
+        dirty,
+      })
+      if (ownsOperation()) {
+        get().finishOperation('success', t.saveCompleted, dirty ? t.unsavedChanges : t.saveCompletedHint)
+        get().showToast(t.toastSaved)
+      }
     } catch (e) {
       console.error('Salvataggio non riuscito', e)
-      get().finishOperation('error', t.saveFailed, t.saveFailedHint)
-      get().showToast(t.toastSaveError)
+      if (ownsOperation()) {
+        get().finishOperation('error', t.saveFailed, t.saveFailedHint)
+        get().showToast(t.toastSaveError)
+      }
+    } finally {
+      saveInProgress = false
     }
   },
 

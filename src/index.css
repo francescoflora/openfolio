@@ -90,6 +90,7 @@ select:disabled {
 .ProseMirror {
   outline: none;
   caret-color: var(--accent);
+  white-space: pre-wrap;
   overflow-wrap: break-word;
   word-break: break-word;
 }
