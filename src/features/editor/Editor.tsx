@@ -1,11 +1,19 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { EditorState, TextSelection } from 'prosemirror-state'
-import type { Plugin, Transaction } from 'prosemirror-state'
+import type { Command, Plugin, Transaction } from 'prosemirror-state'
 import { EditorView } from 'prosemirror-view'
 import type { Schema } from 'prosemirror-model'
 import { baseKeymap, setBlockType } from 'prosemirror-commands'
 import { history, redo, redoDepth, undo, undoDepth } from 'prosemirror-history'
 import { keymap } from 'prosemirror-keymap'
+import {
+  SearchQuery,
+  findNext,
+  findPrev,
+  getSearchState,
+  search,
+  setSearchState,
+} from 'prosemirror-search'
 import {
   AlignJustify,
   CheckCheck,
@@ -19,10 +27,16 @@ import {
   PanelRightOpen,
   Pilcrow,
   Redo2,
+  Replace,
+  Search,
   Type,
   Undo2,
 } from 'lucide-react'
 import { FontModal } from './FontModal'
+import { FindBar } from './FindBar'
+import { loadChecker } from './dictionary'
+import { spellcheckPlugin } from './spellcheck'
+import type { SpellChecker } from './spellcheck'
 import { SCREENPLAY_ELEMENTS, screenplaySchema } from '@/core/schema/screenplay'
 import { proseSchema } from '@/core/schema/prose'
 import { elementLabels, uiText } from '@/core/i18n'
@@ -43,11 +57,18 @@ const liveGetItems = (kind: SuggestionKind, prefix: string) =>
 
 const currentLang = () => useProject.getState().project?.settings.language ?? useProject.getState().language
 
-function buildPlugins(mode: ProjectMode, schema: Schema): Plugin[] {
+function buildPlugins(mode: ProjectMode, schema: Schema, getChecker: () => SpellChecker | null): Plugin[] {
   const getAutoParen = () => useProject.getState().project?.settings.autoParentheses ?? true
   const getAutoContinued = () => useProject.getState().project?.settings.autoContinued ?? true
   const plugins: Plugin[] = [history(), revisionPlugin(schema, () => useProject.getState().revisionActive)]
   plugins.push(keymap({ 'Mod-z': undo, 'Mod-y': redo, 'Mod-Shift-z': redo }))
+  plugins.push(search())
+  plugins.push(
+    spellcheckPlugin(
+      () => useProject.getState().project?.settings.spellcheck ?? true,
+      getChecker,
+    ),
+  )
   if (mode === 'screenplay') {
     plugins.push(smartTypePlugin(liveGetItems))
     plugins.push(keymap(parentheticalKeymap(schema, getAutoParen)))
@@ -79,13 +100,24 @@ interface Popup {
   left: number
 }
 
+const isMac = () => typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform)
+
 export function Editor({ sceneId, mode }: { sceneId: string; mode: ProjectMode }) {
   const ref = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const saveTimer = useRef<number | undefined>(undefined)
+  const checkerRef = useRef<SpellChecker | null>(null)
+  const findListeners = useRef(new Set<() => void>())
+  const subscribeFind = useCallback((listener: () => void) => {
+    findListeners.current.add(listener)
+    return () => {
+      findListeners.current.delete(listener)
+    }
+  }, [])
   const [popup, setPopup] = useState<Popup | null>(null)
   const [fontModalOpen, setFontModalOpen] = useState(false)
+  const [findMode, setFindMode] = useState<'find' | 'replace' | null>(null)
   const [historyState, setHistoryState] = useState({ undo: false, redo: false })
   const projectId = useProject((s) => s.project?.id)
   const revisionActive = useProject((s) => s.revisionActive)
@@ -123,6 +155,23 @@ export function Editor({ sceneId, mode }: { sceneId: string; mode: ProjectMode }
     }
   }
 
+  const closeFind = useCallback(() => {
+    setFindMode(null)
+    const view = viewRef.current
+    if (view) {
+      view.dispatch(setSearchState(view.state.tr, new SearchQuery({ search: '' })))
+      view.focus()
+    }
+  }, [])
+
+  const toggleFind = useCallback(
+    (mode: 'find' | 'replace') => {
+      if (findMode === mode) closeFind()
+      else setFindMode(mode)
+    },
+    [findMode, closeFind],
+  )
+
   const changeElement = (name: string) => {
     const view = viewRef.current
     if (!view) return
@@ -154,7 +203,6 @@ export function Editor({ sceneId, mode }: { sceneId: string; mode: ProjectMode }
     if (!el || !sceneId) return
     const schema = mode === 'screenplay' ? screenplaySchema : proseSchema
     const initLang = currentLang()
-    const initSpell = useProject.getState().project?.settings.spellcheck ?? true
     const docJson = useProject.getState().scenes[sceneId] ?? defaultScene(mode, initLang)
     const doc = schema.nodeFromJSON(docJson)
 
@@ -176,7 +224,7 @@ export function Editor({ sceneId, mode }: { sceneId: string; mode: ProjectMode }
     const state = EditorState.create({
       doc,
       selection,
-      plugins: buildPlugins(mode, schema),
+      plugins: buildPlugins(mode, schema, () => checkerRef.current),
     })
 
     let view: EditorView
@@ -204,7 +252,7 @@ export function Editor({ sceneId, mode }: { sceneId: string; mode: ProjectMode }
 
     view = new EditorView(el, {
       state,
-      attributes: { spellcheck: initSpell ? 'true' : 'false', lang: initLang },
+      attributes: { spellcheck: 'false', lang: initLang },
       dispatchTransaction(tr) {
         const next = view.state.apply(tr)
         view.updateState(next)
@@ -214,6 +262,7 @@ export function Editor({ sceneId, mode }: { sceneId: string; mode: ProjectMode }
         syncElement(next)
         syncHistory(next)
         syncPopup(next)
+        findListeners.current.forEach((listener) => listener())
       },
     })
     viewRef.current = view
@@ -231,9 +280,69 @@ export function Editor({ sceneId, mode }: { sceneId: string; mode: ProjectMode }
   useEffect(() => {
     const view = viewRef.current
     if (!view) return
-    view.setProps({ attributes: { spellcheck: spellcheck ? 'true' : 'false', lang: dictionaryLanguage } })
+    view.setProps({ attributes: { spellcheck: 'false', lang: dictionaryLanguage } })
+    checkerRef.current = null
     view.dispatch(view.state.tr)
+    if (!spellcheck) return
+    let cancelled = false
+    loadChecker(dictionaryLanguage)
+      .then((checker) => {
+        if (cancelled) return
+        checkerRef.current = checker
+        viewRef.current?.dispatch(viewRef.current.state.tr)
+      })
+      .catch((err) => console.warn('Spellcheck dictionary load failed', err))
+    return () => {
+      cancelled = true
+    }
   }, [dictionaryLanguage, spellcheck])
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const view = viewRef.current
+      if (!view) return
+
+      if (e.key === 'Escape' && findMode) {
+        e.preventDefault()
+        closeFind()
+        return
+      }
+
+      if (e.key === 'F3') {
+        if (!getSearchState(view.state)?.query.valid) return
+        e.preventDefault()
+        const command: Command = e.shiftKey ? findPrev : findNext
+        command(view.state, view.dispatch)
+        return
+      }
+
+      if (!(e.ctrlKey || e.metaKey)) return
+      const key = e.key.toLowerCase()
+      if (key !== 'f' && key !== 'h') return
+
+      // Cmd+H on macOS is the system "Hide app" shortcut.
+      if (key === 'h' && isMac()) return
+
+      e.preventDefault()
+      e.stopPropagation()
+      if (e.repeat) return
+
+      const target = e.target instanceof HTMLElement ? e.target : null
+      const inFindBar = !!target?.closest('[data-findbar]')
+      const inField = !!target?.closest('input, textarea, select')
+      const editable = target?.closest('[contenteditable="true"]')
+      const inForeignField =
+        !inFindBar && (inField || (!!editable && !editable.classList.contains('ProseMirror')))
+      if (inForeignField) {
+        if (findMode) closeFind()
+        return
+      }
+
+      toggleFind(key === 'h' || e.altKey ? 'replace' : 'find')
+    }
+    window.addEventListener('keydown', onKeyDown, true)
+    return () => window.removeEventListener('keydown', onKeyDown, true)
+  }, [findMode, closeFind, toggleFind])
 
   useEffect(() => {
     const el = scrollRef.current
@@ -399,6 +508,40 @@ export function Editor({ sceneId, mode }: { sceneId: string; mode: ProjectMode }
               <Redo2 className="h-4 w-4" />
             </button>
 
+            <div className="mx-1 h-3.5 w-px bg-border" />
+
+            {/* Trova */}
+            <button
+              type="button"
+              onClick={() => toggleFind('find')}
+              className={cn(
+                'flex h-7 w-7 items-center justify-center rounded-md border transition cursor-pointer',
+                findMode === 'find'
+                  ? 'border-accent/40 bg-accent/15 text-accent shadow-xs'
+                  : 'border-transparent text-ink-muted hover:bg-surface-2 hover:text-ink',
+              )}
+              title={t.findTitle}
+              aria-label={t.findTitle}
+            >
+              <Search className="h-4 w-4" />
+            </button>
+
+            {/* Trova e sostituisci */}
+            <button
+              type="button"
+              onClick={() => toggleFind('replace')}
+              className={cn(
+                'flex h-7 w-7 items-center justify-center rounded-md border transition cursor-pointer',
+                findMode === 'replace'
+                  ? 'border-accent/40 bg-accent/15 text-accent shadow-xs'
+                  : 'border-transparent text-ink-muted hover:bg-surface-2 hover:text-ink',
+              )}
+              title={t.replaceTitle}
+              aria-label={t.replaceTitle}
+            >
+              <Replace className="h-4 w-4" />
+            </button>
+
             {/* Tipografia elementi / Font (Tt) */}
             <button
               className={cn(
@@ -522,6 +665,16 @@ export function Editor({ sceneId, mode }: { sceneId: string; mode: ProjectMode }
         </ul>
       )}
       </div>
+
+      <FindBar
+        open={findMode !== null}
+        replace={findMode === 'replace'}
+        onToggleReplace={() => setFindMode((m) => (m === 'replace' ? 'find' : 'replace'))}
+        onClose={closeFind}
+        viewRef={viewRef}
+        subscribe={subscribeFind}
+        lang={appLanguage}
+      />
 
       <FontModal
         isOpen={fontModalOpen}

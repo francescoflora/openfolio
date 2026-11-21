@@ -51,11 +51,22 @@ export default function App() {
   const selectedId = useProject((s) => s.selectedId)
   const hasProject = useProject((s) => s.project !== null)
   const mode = useProject((s) => s.project?.mode)
+  const theme = useProject((s) => s.theme)
 
   useEffect(() => {
     const s = useProject.getState()
     s.setTheme(s.theme)
   }, [])
+
+  useEffect(() => {
+    if (!isTauri()) return
+    const canvas =
+      getComputedStyle(document.documentElement).getPropertyValue('--canvas').trim() ||
+      (theme === 'dark' ? '#0f1115' : '#f6f7f9')
+    void import('@tauri-apps/api/webviewWindow')
+      .then(({ getCurrentWebviewWindow }) => getCurrentWebviewWindow().setBackgroundColor(canvas))
+      .catch((err) => console.warn('Failed to set window background color', err))
+  }, [theme])
 
   useEffect(() => {
     if (isTauri()) {
