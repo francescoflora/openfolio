@@ -61,7 +61,16 @@ export function upsertRecent(list: RecentProject[], entry: RecentProject, max = 
 export function listRecent(): RecentProject[] {
   try {
     const raw = localStorage.getItem(RECENT_KEY)
-    return raw ? (JSON.parse(raw) as RecentProject[]) : []
+    const parsed: unknown = raw ? JSON.parse(raw) : []
+    if (!Array.isArray(parsed)) return []
+    return parsed.filter((entry): entry is RecentProject => {
+      if (!entry || typeof entry !== 'object') return false
+      const recent = entry as Partial<RecentProject>
+      return typeof recent.path === 'string' && recent.path.trim().length > 0
+        && typeof recent.title === 'string'
+        && (recent.mode === 'screenplay' || recent.mode === 'novel')
+        && typeof recent.modifiedAt === 'string' && Number.isFinite(Date.parse(recent.modifiedAt))
+    }).slice(0, MAX_RECENT)
   } catch {
     return []
   }
@@ -69,11 +78,19 @@ export function listRecent(): RecentProject[] {
 
 export function addRecent(path: string, title: string, mode: ProjectMode): void {
   const entry: RecentProject = { path, title, mode, modifiedAt: new Date().toISOString() }
-  localStorage.setItem(RECENT_KEY, JSON.stringify(upsertRecent(listRecent(), entry)))
+  try {
+    localStorage.setItem(RECENT_KEY, JSON.stringify(upsertRecent(listRecent(), entry)))
+  } catch {
+    /* Recent-project metadata must not turn a successful file operation into a failure. */
+  }
 }
 
 export function removeRecent(path: string): void {
-  localStorage.setItem(RECENT_KEY, JSON.stringify(listRecent().filter((r) => r.path !== path)))
+  try {
+    localStorage.setItem(RECENT_KEY, JSON.stringify(listRecent().filter((r) => r.path !== path)))
+  } catch {
+    /* ignore quota / private mode */
+  }
 }
 
 export function clearRecents(): void {

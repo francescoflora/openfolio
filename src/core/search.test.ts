@@ -42,4 +42,24 @@ describe('search', () => {
   it('ignores very short queries', () => {
     expect(searchProject(project, scenes, 'a')).toHaveLength(0)
   })
+
+  it('finds words spanning formatted and revised text runs', () => {
+    const formattedScene: SceneDoc = {
+      type: 'doc',
+      content: [{
+        type: 'paragraph',
+        content: [
+          { type: 'text', text: 'La ca' },
+          { type: 'text', text: 's', marks: [{ type: 'strong' }] },
+          { type: 'text', text: 'a', marks: [{ type: 'revision' }] },
+          { type: 'text', text: ' sul mare' },
+        ],
+      }],
+    }
+
+    const hits = searchProject(project, { ...scenes, s1: formattedScene }, 'casa sul')
+    expect(hits).toHaveLength(1)
+    expect(hits[0]!.sceneId).toBe('s1')
+    expect(hits[0]!.snippet).toContain('La casa sul mare')
+  })
 })

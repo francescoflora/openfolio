@@ -204,6 +204,7 @@ export function Editor({ sceneId, mode }: { sceneId: string; mode: ProjectMode }
     const schema = mode === 'screenplay' ? screenplaySchema : proseSchema
     const initLang = currentLang()
     const docJson = useProject.getState().scenes[sceneId] ?? defaultScene(mode, initLang)
+    let syncedDoc = docJson
     const doc = schema.nodeFromJSON(docJson)
 
     let selection: TextSelection | undefined
@@ -257,7 +258,8 @@ export function Editor({ sceneId, mode }: { sceneId: string; mode: ProjectMode }
         const next = view.state.apply(tr)
         view.updateState(next)
         if (tr.docChanged) {
-          useProject.getState().updateScene(sceneId, next.doc.toJSON() as SceneDoc)
+          syncedDoc = next.doc.toJSON() as SceneDoc
+          useProject.getState().updateScene(sceneId, syncedDoc)
         }
         syncElement(next)
         syncHistory(next)
@@ -270,12 +272,31 @@ export function Editor({ sceneId, mode }: { sceneId: string; mode: ProjectMode }
     syncHistory(view.state)
     view.focus()
 
+    // Snapshot restores replace the store document without an editor transaction.
+    const unsubscribe = useProject.subscribe((next) => {
+      const incoming = next.scenes[sceneId]
+      if (next.project?.id !== projectId || !incoming || incoming === syncedDoc) return
+      syncedDoc = incoming
+      const doc = schema.nodeFromJSON(incoming)
+      if (doc.eq(view.state.doc)) return
+      const state = EditorState.create({
+        doc,
+        plugins: buildPlugins(mode, schema, () => checkerRef.current),
+      })
+      view.updateState(state)
+      syncElement(state)
+      syncHistory(state)
+      syncPopup(state)
+      findListeners.current.forEach((listener) => listener())
+    })
+
     return () => {
+      unsubscribe()
       view.destroy()
       viewRef.current = null
       setPopup(null)
     }
-  }, [sceneId, mode])
+  }, [sceneId, mode, projectId])
 
   useEffect(() => {
     const view = viewRef.current

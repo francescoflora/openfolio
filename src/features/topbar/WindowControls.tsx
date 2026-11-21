@@ -20,13 +20,16 @@ export function WindowControls({ className }: WindowControlsProps) {
       if (cancelled) return
       const win = getCurrentWindow()
       const max = await win.isMaximized().catch(() => false)
-      if (!cancelled) setIsMaximized(max)
+      if (cancelled) return
+      setIsMaximized(max)
 
-      unlisten = await win.onResized(async () => {
+      const stop = await win.onResized(async () => {
         const m = await win.isMaximized().catch(() => false)
         if (!cancelled) setIsMaximized(m)
       }).catch(() => undefined)
-    })
+      if (cancelled) stop?.()
+      else unlisten = stop
+    }).catch((err) => console.warn('Failed to watch window size', err))
 
     return () => {
       cancelled = true

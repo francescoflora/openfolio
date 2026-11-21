@@ -8,12 +8,15 @@ interface SplashScreenProps {
 }
 
 export function SplashScreen({ onFinish, isReady = true }: SplashScreenProps) {
-  const mountedAtRef = useRef(Date.now())
+  const mountedAtRef = useRef<number | null>(null)
   const finishedRef = useRef(false)
 
   useEffect(() => {
     const MIN_MS = 1200 // Tempo minimo di visione piacevole senza glitch
     const MAX_MS = 2800 // Timeout massimo di sicurezza
+    const mountedAt = mountedAtRef.current ?? Date.now()
+    mountedAtRef.current = mountedAt
+    const elapsed = Date.now() - mountedAt
 
     const triggerFinish = () => {
       if (finishedRef.current) return
@@ -22,12 +25,11 @@ export function SplashScreen({ onFinish, isReady = true }: SplashScreenProps) {
     }
 
     // Timeout di sicurezza: chiudi comunque se il caricamento reale richiede troppo tempo
-    const safetyTimer = setTimeout(triggerFinish, MAX_MS)
+    const safetyTimer = setTimeout(triggerFinish, Math.max(0, MAX_MS - elapsed))
 
     let minTimer: ReturnType<typeof setTimeout> | null = null
 
     if (isReady) {
-      const elapsed = Date.now() - mountedAtRef.current
       const remaining = Math.max(0, MIN_MS - elapsed)
       minTimer = setTimeout(triggerFinish, remaining)
     }
